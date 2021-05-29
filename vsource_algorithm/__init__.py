@@ -9,12 +9,11 @@ import time
 import requests
 import traceback
 
-import exceptions
-import loginInstance
+import vsource_algorithm.exceptions as exceptions
+import vsource_algorithm.loginInstance as loginInstance
+import vsource_algorithm.configs as configs
 
 login_instance = loginInstance.LoginInstance()
-
-import configs
 
 def login(username, password):
     try:

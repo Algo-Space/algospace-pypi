@@ -2,6 +2,10 @@
 
 链接[VSOURCE_FACE_PLATFORM](https://github.com/VSOURCE-Platform/VSOURCE_FACE_PLATFORM) ，采用平台里的RESTFUL API提供一套本地能够使用的算法库。 
 
+```bash
+pip install vsource_algorithm -i https://pypi.python.org/simple
+```
+
 一个人脸识别的Demo：
 
 ```python
