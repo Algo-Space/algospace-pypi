@@ -14,10 +14,25 @@ if __name__ == '__main__':
 
     face_path1 = 'examples/0006_01.jpg'
     face_path2 = 'examples/0007_01.jpg'
-    ans = vsource_algorithm.face_recognition(face_path1, face_path2)
-    print(ans)
+    score = vsource_algorithm.face_recognition(face_path1, face_path2)
+    print(score)
 ```
 
+一个说话人识别的Demo:
+
+```python
+import vsource_algorithm
+
+if __name__ == '__main__':
+    username = {{ serects.username }}
+    password = {{ serects.password }}
+    vsource_algorithm.login(username, password)
+
+    audio_path1 = 'examples/0.wav'
+    audio_path2 = 'examples/1.wav'
+    score = vsource_algorithm.speaker_recognition(audio_path1, audio_path2)
+    print(score)
+```
 
 TIPS:
 

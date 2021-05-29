@@ -4,9 +4,13 @@
 # @Function : TODO
 
 interval = 0.3
-max_interval = 5
+max_interval = 10
 
 login_url = 'http://120.26.143.61/login'
 face_upload_url = 'http://120.26.143.61/face_upload'
 face_submit_url = 'http://120.26.143.61/face_submit'
 face_result_url = 'http://120.26.143.61/get_result'
+
+speaker_upload_url = 'http://120.26.143.61/speaker_upload'
+speaker_submit_url = 'http://120.26.143.61/speaker_submit'
+speaker_result_url = 'http://120.26.143.61/speaker/get_result'
