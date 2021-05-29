@@ -96,13 +96,3 @@ def face_recognition(face_path1, face_path2):
 
 def speaker_recognition(speaker_path1, speaker_path2):
     pass
-
-if __name__ == '__main__':
-    username = {{ secrets.USERNAME }}
-    password = {{ secrets.PASSWORD }}
-    login(username, password)
-
-    face_path1 = 'examples/0006_01.jpg'
-    face_path2 = 'examples/0007_01.jpg'
-    ans = face_recognition(face_path1, face_path2)
-    print(ans)

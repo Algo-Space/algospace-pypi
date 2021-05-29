@@ -7,16 +7,15 @@
 ```python
 import vsource_algorithm
 
-# 首先先进行用户名和密码的登陆
-username = {{ secrets.USERNAME }}
-password = {{ secrets.PASSWORD }}
-vsource_algorithm.login(username, password)
+if __name__ == '__main__':
+    username = {{ secrets.username }}
+    password = {{ secrets.password }}
+    vsource_algorithm.login(username, password)
 
-# 然后输入本地的人脸图像路径，进行人脸识别算法，得到人脸识别分数
-face_path1 = 'examples/0006_01.jpg'
-face_path2 = 'examples/0007_01.jpg'
-score = vsource_algorithm.face_recognition(face_path1, face_path2)
-print(score)
+    face_path1 = 'examples/0006_01.jpg'
+    face_path2 = 'examples/0007_01.jpg'
+    ans = vsource_algorithm.face_recognition(face_path1, face_path2)
+    print(ans)
 ```
 
 
