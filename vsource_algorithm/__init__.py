@@ -73,7 +73,6 @@ def face_recognition(face_path1, face_path2):
         'face_name1': uploaded_path1,
         'face_name2': uploaded_path2
     }
-    post_params = {'face_name1': '2021-05-29-11-37-45-066/0006_01.jpg', 'face_name2': '2021-05-29-11-37-45-149/0007_01.jpg'}
     response = requests.post(face_submit_url, data=post_params, headers=headers)
     if response.status_code == 403:
         raise exceptions.LoginError('[VSOURCE-Lib] 登陆信息失败，请先正常的登陆')
