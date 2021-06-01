@@ -6,6 +6,12 @@
 pip install vsource_algorithm -i https://pypi.python.org/simple
 ```
 
+目前功能：
+
+1. 人脸识别：输入两张人脸图像判断来自一个人的概率
+2. 说话人识别：输入两个音频判断来自一个人的概率
+3. 人脸检测：输入一张图像检测出所有的人脸框图
+
 一个人脸识别的Demo：
 
 ```python
@@ -36,6 +42,21 @@ if __name__ == '__main__':
     audio_path2 = 'examples/1.wav'
     score = vsource_algorithm.speaker_recognition(audio_path1, audio_path2)
     print(score)
+```
+
+一个人脸检测的Demo:
+
+```python
+import vsource_algorithm
+
+if __name__ == '__main__':
+    username = {{ serects.username }}
+    password = {{ serects.password }}
+    vsource_algorithm.login(username, password)
+
+    face_path1 = 'examples/0008_01.jpg'
+    result = vsource_algorithm.face_detection(face_path1)
+    print(result)
 ```
 
 TIPS:

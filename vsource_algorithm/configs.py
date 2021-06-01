@@ -14,3 +14,6 @@ face_result_url = 'http://120.26.143.61/get_result'
 speaker_upload_url = 'http://120.26.143.61/speaker_upload'
 speaker_submit_url = 'http://120.26.143.61/speaker_submit'
 speaker_result_url = 'http://120.26.143.61/speaker/get_result'
+
+face_detection_upload_url = 'http://120.26.143.61/face_detection_upload'
+face_detection_result_url = 'http://120.26.143.61/face_detection/get_result'
