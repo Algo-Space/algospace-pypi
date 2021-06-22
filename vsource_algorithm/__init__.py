@@ -32,7 +32,7 @@ def login(username, password):
         traceback.print_exc()
         return False
 
-def face_recognition(face_path1, face_path2):
+def face_recognition(face_path1, face_path2, max_interval=configs.max_interval):
     face_upload_url = configs.face_upload_url
     face_submit_url = configs.face_submit_url
     face_result_url = configs.face_result_url
@@ -80,7 +80,7 @@ def face_recognition(face_path1, face_path2):
     start_time = time.time()
     while True:
         # 轮询查询结果
-        if time.time() - start_time >= configs.max_interval:
+        if time.time() - start_time >= max_interval:
             raise exceptions.TimeOutException('[VSOURCE-Lib] 请求超时，未知错误')
         face_result = requests.get(face_result_url, params={'id': task_id}, headers=headers)
         face_ans = json.loads(face_result.content)
@@ -93,7 +93,7 @@ def face_recognition(face_path1, face_path2):
     raise exceptions.TimeOutException('[VSOURCE-Lib] 请求超时，未知错误')
 
 
-def speaker_recognition(speaker_path1, speaker_path2):
+def speaker_recognition(speaker_path1, speaker_path2, max_interval=configs.max_interval):
     speaker_upload_url = configs.speaker_upload_url
     speaker_submit_url = configs.speaker_submit_url
     speaker_result_url = configs.speaker_result_url
@@ -137,7 +137,7 @@ def speaker_recognition(speaker_path1, speaker_path2):
     start_time = time.time()
     while True:
         # 轮询查询结果
-        if time.time() - start_time >= configs.max_interval:
+        if time.time() - start_time >= max_interval:
             raise exceptions.TimeOutException('[VSOURCE-Lib] 请求超时，未知错误')
         face_result = requests.get(speaker_result_url, params={'id': task_id}, headers=headers)
         face_ans = json.loads(face_result.content)
@@ -178,3 +178,55 @@ def face_detection(face_path):
         raise exceptions.LoginError('[VSOURCE-Lib] 登陆信息失败，请先正常的登陆')
     response_dict = json.loads(response.content)
     return response_dict
+
+def face_attribute(face_path, max_interval=configs.max_interval):
+    face_upload_url = configs.deepface_upload_url
+    face_submit_url = configs.deepface_submit_url
+    face_result_url = configs.deepface_result_url
+    headers = {'Cookie': login_instance.cookie}
+    with open(face_path, 'rb') as f1:
+        filename1 = os.path.split(face_path)[-1]
+        ext1 = os.path.splitext(face_path)[-1]
+        if ext1 not in ['.jpg', '.png', '.jpeg']:
+            raise exceptions.FileExtNotValid('[VSOURCE-Lib] 图像扩展名不对，请检查是否是png或者jpg')
+        if ext1 == '.jpg':
+            filetype = 'image/jpg'
+        if ext1 == '.png':
+            filetype = 'image/png'
+        if ext1 == '.png':
+            filetype = 'image/jpeg'
+
+        uploaded_response1 = requests.post(face_upload_url, files={
+            'file':  (filename1, f1.read(), filetype)
+        }, headers=headers)
+        if uploaded_response1.status_code == 403:
+            raise exceptions.LoginError('[VSOURCE-Lib] 登陆信息失败，请先正常的登陆')
+
+        uploaded_path1 = json.loads(uploaded_response1.content)['return_path']
+
+    post_params = {
+        'face_name': uploaded_path1
+    }
+    response = requests.post(face_submit_url, data=post_params, headers=headers)
+    if response.status_code == 403:
+        raise exceptions.LoginError('[VSOURCE-Lib] 登陆信息失败，请先正常的登陆')
+    response_dict = json.loads(response.content)
+    task_id = response_dict['id']
+    start_time = time.time()
+    while True:
+        # 轮询查询结果
+        if time.time() - start_time >= max_interval:
+            raise exceptions.TimeOutException('[VSOURCE-Lib] 请求超时，未知错误')
+        face_result = requests.get(face_result_url, params={'id': task_id}, headers=headers)
+        face_ans = json.loads(face_result.content)
+        if face_ans['status'] != 200:
+            time.sleep(configs.interval)
+            continue
+        try:
+            assert face_ans['status'] == 200
+            return face_ans['result']['result']
+        except Exception as e:
+            return []
+
+    raise exceptions.TimeOutException('[VSOURCE-Lib] 请求超时，未知错误')
+

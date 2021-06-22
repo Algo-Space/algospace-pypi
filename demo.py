@@ -29,3 +29,8 @@ if __name__ == '__main__':
     score = vsource_algorithm.speaker_recognition(audio_path1, audio_path2)
     print(score)
 
+    # Face Attribute
+    face_path1 = 'examples/0008_01.jpg'
+    result = vsource_algorithm.face_attribute(face_path1)
+    print(result)
+

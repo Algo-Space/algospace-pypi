@@ -17,3 +17,7 @@ speaker_result_url = 'http://120.26.143.61/speaker/get_result'
 
 face_detection_upload_url = 'http://120.26.143.61/face_detection_upload'
 face_detection_result_url = 'http://120.26.143.61/face_detection/get_result'
+
+deepface_upload_url = 'http://120.26.143.61/deepface_upload'
+deepface_submit_url = 'http://120.26.143.61/deepface_submit'
+deepface_result_url = 'http://120.26.143.61/deepface/get_result'
