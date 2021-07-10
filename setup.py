@@ -9,7 +9,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='vsource_algorithm',
+    name='vsource',
     version='v1.0.2',
     description=(
         'Algorithm python library linked to vsource platform.'
@@ -34,4 +34,5 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Topic :: Software Development :: Libraries'
     ],
+    include_package_data=True
 )

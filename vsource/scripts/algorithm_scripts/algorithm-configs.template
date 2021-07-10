@@ -1,0 +1,20 @@
+import os
+
+app_redis_hostname = os.environ.get('REDIS_HOST')
+app_redis_port     = int(os.environ.get('REDIS_PORT'))
+algorithm_name     = str(os.environ.get('ALGORITHM_NAME'))
+
+
+app_info_key = '{}_INFO_KEY'.format(algorithm_name)
+app_response_key = '{}_RESPONSE_KEY'.format(algorithm_name)
+app_error_key = '{}_ERROR_KEY'.format(algorithm_name)
+
+app_kafka_host = os.environ.get('KAFKA_HOST')
+app_kafka_topic = '{}_queue'.format(algorithm_name.lower())
+app_kafka_key = '{}_requests'.format(algorithm_name.lower())
+app_group_id  = 'calculator'
+
+app_storage_host = os.environ.get('STORAGE_HOST')
+
+call_interval  = 1
+sleep_interval = 7

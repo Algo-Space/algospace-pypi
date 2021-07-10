@@ -21,3 +21,11 @@ face_detection_result_url = 'http://120.26.143.61/face_detection/get_result'
 deepface_upload_url = 'http://120.26.143.61/deepface_upload'
 deepface_submit_url = 'http://120.26.143.61/deepface_submit'
 deepface_result_url = 'http://120.26.143.61/deepface/get_result'
+
+deepface2_upload_url = 'http://120.26.143.61/deepface2_upload'
+deepface2_submit_url = 'http://120.26.143.61/deepface2_submit'
+deepface2_result_url = 'http://120.26.143.61/deepface2/get_result'
+
+deepface3_upload_url = 'http://120.26.143.61/deepface3_upload'
+deepface3_submit_url = 'http://120.26.143.61/deepface3_submit'
+deepface3_result_url = 'http://120.26.143.61/deepface3/get_result'

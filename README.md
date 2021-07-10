@@ -3,7 +3,7 @@
 链接[VSOURCE_FACE_PLATFORM](https://github.com/VSOURCE-Platform/VSOURCE_FACE_PLATFORM) ，采用平台里的RESTFUL API提供一套本地能够使用的算法库。 
 
 ```bash
-pip install vsource_algorithm -i https://pypi.python.org/simple
+pip install vsource -i https://pypi.python.org/simple
 ```
 
 目前功能：
@@ -16,63 +16,68 @@ pip install vsource_algorithm -i https://pypi.python.org/simple
 一个人脸识别的Demo：
 
 ```python
-import vsource_algorithm
+import vsource
 
 if __name__ == '__main__':
     username = {{ secrets.username }}
     password = {{ secrets.password }}
-    vsource_algorithm.login(username, password)
+    vsource.login(username, password)
 
     face_path1 = 'examples/0006_01.jpg'
     face_path2 = 'examples/0007_01.jpg'
-    score = vsource_algorithm.face_recognition(face_path1, face_path2)
+    score = vsource.face_recognition(face_path1, face_path2)
     print(score)
 ```
 
 一个说话人识别的Demo:
 
 ```python
-import vsource_algorithm
+import vsource
 
 if __name__ == '__main__':
     username = {{ serects.username }}
     password = {{ serects.password }}
-    vsource_algorithm.login(username, password)
+    vsource.login(username, password)
 
     audio_path1 = 'examples/0.wav'
     audio_path2 = 'examples/1.wav'
-    score = vsource_algorithm.speaker_recognition(audio_path1, audio_path2)
+    score = vsource.speaker_recognition(audio_path1, audio_path2)
     print(score)
 ```
 
 一个人脸检测的Demo:
 
 ```python
-import vsource_algorithm
+import vsource
 
 if __name__ == '__main__':
     username = {{ serects.username }}
     password = {{ serects.password }}
-    vsource_algorithm.login(username, password)
+    vsource.login(username, password)
 
     face_path1 = 'examples/0008_01.jpg'
-    result = vsource_algorithm.face_detection(face_path1)
+    result = vsource.face_detection(face_path1)
     print(result)
 ```
 
 一个人脸属性的Demo:
 
 ```python
-import vsource_algorithm
+import vsource
 
 if __name__ == '__main__':
     username = {{ serects.username }}
     password = {{ serects.password }}
-    vsource_algorithm.login(username, password)
+    vsource.login(username, password)
 
     face_path1 = 'examples/0008_01.jpg'
-    result = vsource_algorithm.face_attribute(face_path1)
+    result = vsource.face_attribute(face_path1)
     print(result)
+    # 其他同学实现的版本
+    result2 = vsource.face_attribute(face_path1, version='fsx')
+    print(result2)
+    result3 = vsource.face_attribute(face_path1, version='cgy-2')
+    print(result3)
 ```
 
 TIPS:

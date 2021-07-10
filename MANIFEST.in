@@ -1,0 +1,1 @@
+recursive-include vsource/scripts/algorithm_scripts *.template
