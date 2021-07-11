@@ -17,6 +17,7 @@ class AlgorithmContainerConfigParser:
                 self.service_filename = self.service_filename[:-3]
             self.service_interface = config['service-interface']
             self.algorithm_name    = config['algorithm-name']
+            self.algorithm_version = config['version']
             self.requirements      = config['requirements']
             self.pre_command       = config['pre-command']
             self.input_params      = config['input-params']
@@ -25,11 +26,11 @@ class AlgorithmContainerConfigParser:
         except AssertionError:
             err_msg = traceback.format_exc()
             traceback.print_exc()
-            self.logs.append('[Step 0 Error, Service Directory not exists]: ' + err_msg)
+            print('[Step 0 Error, Service Directory not exists]: ' + err_msg)
         except KeyError:
             err_msg = traceback.format_exc()
             traceback.print_exc()
-            self.logs.append('[Step 0 Error, KeyError, invalid config]: ' + err_msg)
+            print('[Step 0 Error, KeyError, invalid config]: ' + err_msg)
 
     # 第一步，生成requirements.txt
     def gen_requirements_txt(self):
@@ -40,10 +41,10 @@ class AlgorithmContainerConfigParser:
                     f.write('\n')
                 f.write("redis\n")
                 f.write('kafka-python\n')
-            self.logs.append('[Step 1/6] Requirements has been successfully generated!')
+            print('[Step 1/6] Requirements has been successfully generated!')
         except Exception as e:
             err_msg = traceback.format_exc()
-            self.logs.append('[Step 2 Error, Requirements Generated Failed]: ' + err_msg)
+            print('[Step 2 Error, Requirements Generated Failed]: ' + err_msg)
             traceback.print_exc()
 
     # 第二步，生成dockerfile
@@ -60,10 +61,10 @@ class AlgorithmContainerConfigParser:
 
             with open(os.path.join(self.service_dir, 'vsource_dockerfile'), 'w') as f:
                 f.write(templates)
-            self.logs.append('[Step 2/6] Dockerfile has been successfully generated!')
+            print('[Step 2/6] Dockerfile has been successfully generated!')
         except Exception as e:
             err_msg = traceback.format_exc()
-            self.logs.append('[Step 2 Error, Dockerfile Generated Failed]: ' + err_msg)
+            print('[Step 2 Error, Dockerfile Generated Failed]: ' + err_msg)
             traceback.print_exc()
 
     # 第三步，生成vsource_configs.py
@@ -74,10 +75,10 @@ class AlgorithmContainerConfigParser:
 
             with open(os.path.join(self.service_dir, 'vsource_configs.py'), 'w') as f:
                 f.write(templates)
-            self.logs.append('[Step 3/6] Configfile has been successfully generated!')
+            print('[Step 3/6] Configfile has been successfully generated!')
         except Exception as e:
             err_msg = traceback.format_exc()
-            self.logs.append('[Step 3 Error, ConfigFile Generated Failed]: ' + err_msg)
+            print('[Step 3 Error, ConfigFile Generated Failed]: ' + err_msg)
             traceback.print_exc()
 
     # 第四步，service.py
@@ -89,18 +90,37 @@ class AlgorithmContainerConfigParser:
             param_init_lines = ""
             for each_input_param_name in self.input_params:
                 param_init_lines += ('            {} = info_dict[\'{}\']\n'.format(each_input_param_name, each_input_param_name))
+                if self.input_params[each_input_param_name]['type'] == 'path':
+                    param_init_lines += ('            {} = self.read({})\n'.format(each_input_param_name, each_input_param_name))
+                elif self.input_params[each_input_param_name]['type'] == 'float':
+                    param_init_lines += ('            {} = float({})\n'.format(each_input_param_name, each_input_param_name))
+                elif self.input_params[each_input_param_name]['type'] == 'int':
+                    param_init_lines += ('            {} = int({})\n'.format(each_input_param_name, each_input_param_name))
+                elif self.input_params[each_input_param_name]['type'] == 'str':
+                    param_init_lines += ('            {} = str({})\n'.format(each_input_param_name, each_input_param_name))
+                else:
+                    param_init_lines += ('            {} = {}({})\n'.format(each_input_param_name, self.input_params[each_input_param_name]['type'],  each_input_param_name))
             function_lines =  "            out = {}.{}(".format(self.service_filename, self.service_interface)
-            for each_input_param_name in list(self.input_params.keys())[:-1]:
-                function_lines += (each_input_param_name + ', ')
-            function_lines += (list(self.input_params.keys())[-1] + ")\n")
+            if len(list(self.input_params.keys())) == 0:
+                function_lines += ")\n"
+            else:
+                for each_input_param_name in list(self.input_params.keys())[:-1]:
+                    function_lines += (each_input_param_name + ', ')
+                function_lines += (list(self.input_params.keys())[-1] + ")\n")
+
+            for each_output_param in self.output_params:
+                if self.output_params[each_output_param]['type'] == 'path':
+                    function_lines += '            {} = self.write_file({})\n'.format(each_output_param, 'out[\'{}\']'.format(each_output_param))
+                    function_lines += '            out[\'{}\'] = {}\n'.format(each_output_param, each_output_param)
             output_lines = "            return out\n"
-            templates = templates.format(import_lines, param_init_lines + function_lines + output_lines)
+            templates = templates.replace('{import-lines}', import_lines)
+            templates = templates.replace('{function-lines}', param_init_lines + function_lines + output_lines)
             with open(os.path.join(self.service_dir, 'vsource_service.py'), 'w') as f:
                 f.write(templates)
-            self.logs.append('[Step 4/6] Servicefile has been successfully generated!')
+            print('[Step 4/6] Servicefile has been successfully generated!')
         except Exception as e:
             err_msg = traceback.format_exc()
-            self.logs.append('[Step 4 Error, Servicefile Generated Failed]: ' + err_msg)
+            print('[Step 4 Error, Servicefile Generated Failed]: ' + err_msg)
             traceback.print_exc()
 
 
@@ -110,31 +130,39 @@ class AlgorithmContainerConfigParser:
             with open(os.path.join(self.cur_dir, 'algorithm-deploy-compose.template'), 'r') as f:
                 templates = f.read()
             templates = templates.format(
-                self.algorithm_name, self.algorithm_name, self.algorithm_name
+                self.algorithm_name, self.algorithm_name, self.algorithm_version, self.algorithm_name, self.algorithm_version
             )
             with open(os.path.join(self.service_dir, 'vsource_deploy_compose.yaml'), 'w') as f:
                 f.write(templates)
-            self.logs.append('[Step 5/6] Deployment compose file has been successfully generated!')
+            print('[Step 5/6] Deployment compose file has been successfully generated!')
         except Exception as e:
             err_msg = traceback.format_exc()
-            self.logs.append('[Step 5 Error, Deployment compose file Generated Failed]: ' + err_msg)
+            print('[Step 5 Error, Deployment compose file Generated Failed]: ' + err_msg)
             traceback.print_exc()
 
+    # 第六步，control文件生成
     def gen_control_script(self):
         try:
             with open(os.path.join(self.cur_dir, 'algorithm-start.template'), 'r') as f:
                 templates = f.read()
-            with open(os.path.join(self.service_dir, 'vsource_deploy_compose.yaml'), 'w') as f:
-                pass
-            templates = templates.format(
-                self.algorithm_name, self.algorithm_name, self.algorithm_name
-            )
-            with open(os.path.join(self.service_dir, 'vsource_deploy_compose.yaml'), 'w') as f:
+            with open(os.path.join(self.service_dir, 'vsource_start.sh'), 'w') as f:
+                templates = templates.format(self.algorithm_name, self.algorithm_version)
                 f.write(templates)
-            self.logs.append('[Step 5/6] Deployment compose file has been successfully generated!')
+
+            with open(os.path.join(self.cur_dir, 'algorithm-stop.template'), 'r') as f:
+                templates = f.read()
+            with open(os.path.join(self.service_dir, 'vsource_stop.sh'), 'w') as f:
+                f.write(templates)
+
+            with open(os.path.join(self.cur_dir, 'algorithm-logs.template'), 'r') as f:
+                templates = f.read()
+            with open(os.path.join(self.service_dir, 'vsource_logs.sh'), 'w') as f:
+                f.write(templates)
+
+            print('[Step 6/6] Deployment control file has been successfully generated!')
         except Exception as e:
             err_msg = traceback.format_exc()
-            self.logs.append('[Step 5 Error, Deployment compose file Generated Failed]: ' + err_msg)
+            print('[Step 6 Error, Deployment compose file Generated Failed]: ' + err_msg)
             traceback.print_exc()
 
     def generate(self):
@@ -142,8 +170,8 @@ class AlgorithmContainerConfigParser:
         self.gen_dockerfile()
         self.gen_configs()
         self.gen_service()
-        # self.gen_deployment_kube()
         self.gen_deployment_compose()
+        self.gen_control_script()
 
 def parse_algorithm(config):
     a = AlgorithmContainerConfigParser(config)
@@ -159,7 +187,8 @@ if __name__ == '__main__':
         'service-interface': 'random_number',
         'requirements': [
             'numpy==1.19.0',
-            'opencv-python'
+            'opencv-python',
+            'requests'
         ],
         'pre-command': [
             'apt install -y libgl1-mesa-glx'
@@ -175,7 +204,10 @@ if __name__ == '__main__':
             },
         },
         'output-params': {
-            'result': 'calculated results, as a random number'
+            'result': {
+                'type': 'float',
+                'describe': 'calculated  result'
+            }
         }
     }
 
