@@ -7,10 +7,17 @@ class FileExtNotValid(Exception):
     def __init__(self, err_msg):
         Exception.__init__(self, err_msg)
 
+
 class TimeOutException(Exception):
     def __init__(self, err_msg):
         Exception.__init__(self, err_msg)
 
+
 class LoginError(Exception):
+    def __init__(self, err_msg):
+        Exception.__init__(self, err_msg)
+
+
+class InvalidAlgorithmVersion(Exception):
     def __init__(self, err_msg):
         Exception.__init__(self, err_msg)

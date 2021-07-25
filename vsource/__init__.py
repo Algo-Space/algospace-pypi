@@ -16,10 +16,11 @@ from vsource.algorithms.new_algorithm import new_algorithm
 from vsource.algorithms.cod_cpd import cod_cpd
 from vsource.algorithms.salient_object_detection import salient_object_detection
 from vsource.algorithms.landmark_detection import landmark_detection
+from vsource.algorithms.binary_segmentation import binary_segmentation
 
 from vsource.scripts.algorithm_scripts.algorithms import parse_algorithm
 from vsource.scripts.enroll_service import enroll
 
-__version__ = 'v1.0.19'
+__version__ = 'v1.0.20'
 __author__  = 'Ecohnoch'
 __email__   = 'chuyuan@vsource.club'
