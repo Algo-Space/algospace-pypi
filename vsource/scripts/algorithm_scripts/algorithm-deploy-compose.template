@@ -1,0 +1,11 @@
+version: '3.1'
+services:
+  {}:
+    image: 120.26.143.61:10020/service/{}:{}
+    environment:
+      REDIS_HOST: 120.26.143.61
+      REDIS_PORT: 13121
+      KAFKA_HOST: 120.26.143.61:9092
+      STORAGE_HOST: http://120.26.143.61:13402
+      ALGORITHM_NAME: {}
+      ALGORITHM_VERSION: {}

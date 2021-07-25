@@ -1,0 +1,2 @@
+docker build -t 120.26.143.61:10020/service/{}:{} -f vsource_dockerfile ./
+docker-compose -f vsource_deploy_compose.yaml up -d

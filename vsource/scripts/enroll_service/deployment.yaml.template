@@ -1,0 +1,151 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {full-algorithm-api-name}
+  labels:
+    app:  {full-algorithm-api-name}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app:  {full-algorithm-api-name}
+  template:
+    metadata:
+      labels:
+        app: {full-algorithm-api-name}
+    spec:
+#      nodeSelector:
+#        k-role: internal-nodes
+      nodeName: {node-name}
+      containers:
+      - name:  {full-algorithm-api-name}
+        image: 120.26.143.61:10020/template/vsource-api:1.0
+        env:
+          # INPUT_PARAMS
+          # SERVICE_PORT
+          # ALGORITHM_NAME
+          # ALGORITHM_VERSION
+          # REDIS_HOST
+          # REDIS_PORT
+          # KAFKA_HOST
+          # MONGO_HOST
+          # MONGO_PORT
+          - name: INPUT_PARAMS
+            value: '{input-params}'
+          - name: SERVICE_PORT
+            value: '{service-port}'
+          - name: ALGORITHM_NAME
+            value: '{algorithm-name}'
+          - name: ALGORITHM_VERSION
+            value: '{algorithm-version}'
+          - name: REDIS_HOST
+            value: '120.26.143.61'
+          - name: REDIS_PORT
+            value: '13121'
+          - name: KAFKA_HOST
+            value: '120.26.143.61:9092'
+          - name: MONGO_HOST
+            value: '120.26.143.61'
+          - name: MONGO_PORT
+            value: '13122'
+        imagePullPolicy: IfNotPresent
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {full-algorithm-api-name}
+  namespace: default
+  labels:
+    app: {full-algorithm-api-name}
+spec:
+  type: NodePort
+  selector:
+    app: {full-algorithm-api-name}
+  ports:
+    - port: {service-port}
+#      targetPort: 12349
+      nodePort: {service-port}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {full-algorithm-collector-name}
+  labels:
+    app: {full-algorithm-collector-name}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {full-algorithm-collector-name}
+  template:
+    metadata:
+      labels:
+        app: {full-algorithm-collector-name}
+    spec:
+      nodeName: {node-name}
+#      nodeSelector:
+#        k-role: internal-nodes
+      containers:
+      - name: {full-algorithm-collector-name}
+        image: 120.26.143.61:10020/template/vsource-collector:1.0
+        env:
+          # REDIS_HOST
+          # REDIS_PORT
+          # ALGORITHM_NAME
+          # ALGORITHM_VERSION
+          # MONGO_HOST
+          # MONGO_PORT
+          - name: REDIS_HOST
+            value: '120.26.143.61'
+          - name: REDIS_PORT
+            value: '13121'
+          - name: ALGORITHM_NAME
+            value: '{algorithm-name}'
+          - name: ALGORITHM_VERSION
+            value: '{algorithm-version}'
+          - name: MONGO_HOST
+            value: '120.26.143.61'
+          - name: MONGO_PORT
+            value: '13122'
+        imagePullPolicy: IfNotPresent
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {full-algorithm-request-db-name}
+  labels:
+    app: {full-algorithm-request-db-name}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {full-algorithm-request-db-name}
+  template:
+    metadata:
+      labels:
+        app: {full-algorithm-request-db-name}
+    spec:
+      nodeName: {node-name}
+#      nodeSelector:
+#        k-role: internal-nodes
+      containers:
+      - name: {full-algorithm-request-db-name}
+        image: 120.26.143.61:10020/template/vsource-request-db:1.0
+        env:
+          # KAFKA_HOST
+          # ALGORITHM_NAME
+          # ALGORITHM_VERSION
+          # MONGO_HOST
+          # MONGO_PORT
+          - name: KAFKA_HOST
+            value: '120.26.143.61:9092'
+          - name: ALGORITHM_NAME
+            value: '{algorithm-name}'
+          - name: ALGORITHM_VERSION
+            value: '{algorithm-version}'
+          - name: MONGO_HOST
+            value: '120.26.143.61'
+          - name: MONGO_PORT
+            value: '13122'
+        imagePullPolicy: IfNotPresent

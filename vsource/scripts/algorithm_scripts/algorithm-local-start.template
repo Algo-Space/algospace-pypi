@@ -1,0 +1,11 @@
+pip install redis
+pip install kafka-python
+pip install requests
+export REDIS_HOST=120.26.143.61
+export REDIS_PORT=13121
+export KAFKA_HOST=120.26.143.61:9092
+export STORAGE_HOST=http://120.26.143.61:13402
+export ALGORITHM_NAME=[ALGORITHM_NAME]
+export ALGORITHM_VERSION=[ALGORITHM_VERSION]
+
+nohup python -u vsource_service.py > vsource.log 2>&1 &
