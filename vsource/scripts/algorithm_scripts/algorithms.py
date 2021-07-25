@@ -37,10 +37,17 @@ class AlgorithmContainerConfigParser:
         try:
             with open(os.path.join(self.service_dir, 'vsource_requirements.txt'), 'w') as f:
                 for each_requirement in self.requirements:
-                    f.write(each_requirement)
-                    f.write('\n')
+                    if 'torch==' in each_requirement:
+                        # 如果是Pytorch，要从官网下载可支持版本，否则会出问题，查看Dockerfile那里
+                        f.write('\n')
+                    elif 'torchvision' in each_requirement:
+                        f.write('\n')
+                    else:
+                        f.write(each_requirement)
+                        f.write('\n')
                 f.write("redis\n")
                 f.write('kafka-python\n')
+                f.write('requests\n')
             print('[Step 1/6] Requirements has been successfully generated!')
         except Exception as e:
             err_msg = traceback.format_exc()
@@ -56,6 +63,18 @@ class AlgorithmContainerConfigParser:
             pre_command_lines = ""
             for each_command in self.pre_command:
                 pre_command_lines += ("RUN " + each_command + "\n")
+
+            for each_requirement in self.requirements:
+                if 'torch==' in each_requirement:
+                    # 如果是Pytorch，要从官网下载可支持版本，否则会出问题
+                    pre_command_lines += ('RUN curl -kL http://download.pytorch.org/whl/torch/torch-1.9.0+cpu-cp36-cp36m-linux_x86_64.whl -O\n')
+                    pre_command_lines += ('RUN pip install --timeout=1000000 torch-1.9.0+cpu-cp36-cp36m-linux_x86_64.whl\n')
+                elif 'torchvision' in each_requirement:
+                    pre_command_lines += (
+                        'RUN curl -kL https://download.pytorch.org/whl/torchvision/torchvision-0.10.0+cpu-cp36-cp36m-linux_x86_64.whl -O\n')
+                    pre_command_lines += (
+                        'RUN pip install --timeout=1000000 torchvision-0.10.0+cpu-cp36-cp36m-linux_x86_64.whl\n')
+
             requirements_lines = "RUN pip --timeout=1000000 install -r vsource_requirements.txt \n"
             templates = templates.format(pre_command_lines, requirements_lines)
 
@@ -91,7 +110,7 @@ class AlgorithmContainerConfigParser:
             for each_input_param_name in self.input_params:
                 param_init_lines += ('            {} = info_dict[\'{}\']\n'.format(each_input_param_name, each_input_param_name))
                 if self.input_params[each_input_param_name]['type'] == 'path':
-                    param_init_lines += ('            {} = self.read({})\n'.format(each_input_param_name, each_input_param_name))
+                    param_init_lines += ('            {} = self.read_file({})\n'.format(each_input_param_name, each_input_param_name))
                 elif self.input_params[each_input_param_name]['type'] == 'float':
                     param_init_lines += ('            {} = float({})\n'.format(each_input_param_name, each_input_param_name))
                 elif self.input_params[each_input_param_name]['type'] == 'int':
@@ -115,6 +134,11 @@ class AlgorithmContainerConfigParser:
             output_lines = "            return out\n"
             templates = templates.replace('{import-lines}', import_lines)
             templates = templates.replace('{function-lines}', param_init_lines + function_lines + output_lines)
+
+            lower_name = self.algorithm_name.replace('-', '_').replace('.', '_').lower()
+            lower_version = self.algorithm_version.replace('-', '_').replace('.', '_').lower()
+            templates = templates.replace('{ALGORITHM_NAME}', lower_name)
+            templates = templates.replace('{ALGORITHM_VERSION}', lower_version)
             with open(os.path.join(self.service_dir, 'vsource_service.py'), 'w') as f:
                 f.write(templates)
             print('[Step 4/6] Servicefile has been successfully generated!')
@@ -129,8 +153,9 @@ class AlgorithmContainerConfigParser:
         try:
             with open(os.path.join(self.cur_dir, 'algorithm-deploy-compose.template'), 'r') as f:
                 templates = f.read()
+            lower_name = self.algorithm_name.replace('_', '-').lower()
             templates = templates.format(
-                self.algorithm_name, self.algorithm_name, self.algorithm_version, self.algorithm_name, self.algorithm_version
+                self.algorithm_name, lower_name, self.algorithm_version, self.algorithm_name, self.algorithm_version
             )
             with open(os.path.join(self.service_dir, 'vsource_deploy_compose.yaml'), 'w') as f:
                 f.write(templates)
@@ -146,7 +171,8 @@ class AlgorithmContainerConfigParser:
             with open(os.path.join(self.cur_dir, 'algorithm-start.template'), 'r') as f:
                 templates = f.read()
             with open(os.path.join(self.service_dir, 'vsource_start.sh'), 'w') as f:
-                templates = templates.format(self.algorithm_name, self.algorithm_version)
+                lower_name = self.algorithm_name.replace('_', '-').lower()
+                templates = templates.format(lower_name, self.algorithm_version)
                 f.write(templates)
 
             with open(os.path.join(self.cur_dir, 'algorithm-stop.template'), 'r') as f:
@@ -165,6 +191,21 @@ class AlgorithmContainerConfigParser:
             print('[Step 6 Error, Deployment compose file Generated Failed]: ' + err_msg)
             traceback.print_exc()
 
+    def generate_local_start_script(self):
+        try:
+            with open(os.path.join(self.cur_dir, 'algorithm-local-start.template'), 'r') as f:
+                templates = f.read()
+            templates = templates.replace("[ALGORITHM_NAME]", self.algorithm_name)
+            templates = templates.replace("[ALGORITHM_VERSION]", self.algorithm_version)
+            with open(os.path.join(self.service_dir, 'vsource_local_start.sh'), 'w') as f:
+                f.write(templates)
+            print('[Step Local] Local start script has been successfully generated!')
+
+        except Exception as e:
+            err_msg = traceback.format_exc()
+            print('[Step Local Error, Local start script file Generated Failed]: ' + err_msg)
+            traceback.print_exc()
+
     def generate(self):
         self.gen_requirements_txt()
         self.gen_dockerfile()
@@ -172,6 +213,8 @@ class AlgorithmContainerConfigParser:
         self.gen_service()
         self.gen_deployment_compose()
         self.gen_control_script()
+
+        self.generate_local_start_script()
 
 def parse_algorithm(config):
     a = AlgorithmContainerConfigParser(config)

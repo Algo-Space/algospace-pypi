@@ -29,7 +29,7 @@ class Service:
 
     def read_file(self, path):
         # /get_files/<namespace>/<user>/<timestamp>/<filename>
-        file_url =  self.storage_host + '/' + path
+        file_url =  self.storage_host + '/get_files/' + path
         dir_path = os.path.dirname(os.path.join('tmp', path))
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
@@ -40,7 +40,7 @@ class Service:
 
     def write_file(self, path):
         filename = os.path.split(path)[-1]
-        upload_url = self.storage_host + '/tmp/tmp'
+        upload_url = self.storage_host + '/upload_files' + '/{ALGORITHM_NAME}/{ALGORITHM_VERSION}'
         with open(path, 'rb') as f:
             files = {'file': (filename, f.read())}
         response =  requests.post(upload_url, files=files)

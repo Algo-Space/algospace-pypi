@@ -8,12 +8,18 @@ from vsource.algorithms.face_recognition import face_recognition
 from vsource.algorithms.face_detection import face_detection
 from vsource.algorithms.face_attribute import face_attribute
 from vsource.algorithms.speaker_recognition import speaker_recognition
+from vsource.algorithms.face_generation import face_generation
+from vsource.algorithms.random_number import random_number
+from vsource.algorithms.remove_bg import remove_bg
 
 from vsource.algorithms.new_algorithm import new_algorithm
+from vsource.algorithms.cod_cpd import cod_cpd
+from vsource.algorithms.salient_object_detection import salient_object_detection
+from vsource.algorithms.landmark_detection import landmark_detection
 
 from vsource.scripts.algorithm_scripts.algorithms import parse_algorithm
 from vsource.scripts.enroll_service import enroll
 
-__version__ = 'v1.0.5'
+__version__ = 'v1.0.19'
 __author__  = 'Ecohnoch'
-__email__   = '542305306@qq.com'
+__email__   = 'chuyuan@vsource.club'
