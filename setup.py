@@ -10,15 +10,15 @@ from setuptools import setup, find_packages
 
 setup(
     name='vsource',
-    version='v1.0.5',
+    version='v1.0.19',
     description=(
         'Algorithm python library linked to vsource platform.'
     ),
     long_description=open('README.rst', encoding='utf8').read(),
     author='Ecohnoch',
-    author_email='542305306@qq.com',
+    author_email='chuyuan@vsource.club',
     maintainer='Ecohnoch',
-    maintainer_email='542305306@qq.com',
+    maintainer_email='chuyuan@vsource.club',
     license='BSD License',
     packages=find_packages(),
     platforms=["all"],
