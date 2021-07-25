@@ -37,10 +37,19 @@ class AlgorithmContainerConfigParser:
         try:
             with open(os.path.join(self.service_dir, 'vsource_requirements.txt'), 'w') as f:
                 for each_requirement in self.requirements:
-                    if 'torch==' in each_requirement:
+                    if 'torch==' in each_requirement.replace(' ', ''):
                         # 如果是Pytorch，要从官网下载可支持版本，否则会出问题，查看Dockerfile那里
-                        f.write('\n')
+                        f.write('--find-links https://download.pytorch.org/whl/torch_stable.html\n')
+                        if each_requirement.replace(' ', '').endswith('+cpu'):
+                            f.write(each_requirement+'+cpu\n')
+                        else:
+                            f.write(each_requirement + '\n')
                     elif 'torchvision' in each_requirement:
+                        f.write('--find-links https://download.pytorch.org/whl/torch_stable.html\n')
+                        if each_requirement.replace(' ', '').endswith('+cpu'):
+                            f.write(each_requirement+'+cpu\n')
+                        else:
+                            f.write(each_requirement + '\n')
                         f.write('\n')
                     else:
                         f.write(each_requirement)
@@ -64,16 +73,16 @@ class AlgorithmContainerConfigParser:
             for each_command in self.pre_command:
                 pre_command_lines += ("RUN " + each_command + "\n")
 
-            for each_requirement in self.requirements:
-                if 'torch==' in each_requirement:
-                    # 如果是Pytorch，要从官网下载可支持版本，否则会出问题
-                    pre_command_lines += ('RUN curl -kL http://download.pytorch.org/whl/torch/torch-1.9.0+cpu-cp36-cp36m-linux_x86_64.whl -O\n')
-                    pre_command_lines += ('RUN pip install --timeout=1000000 torch-1.9.0+cpu-cp36-cp36m-linux_x86_64.whl\n')
-                elif 'torchvision' in each_requirement:
-                    pre_command_lines += (
-                        'RUN curl -kL https://download.pytorch.org/whl/torchvision/torchvision-0.10.0+cpu-cp36-cp36m-linux_x86_64.whl -O\n')
-                    pre_command_lines += (
-                        'RUN pip install --timeout=1000000 torchvision-0.10.0+cpu-cp36-cp36m-linux_x86_64.whl\n')
+            # for each_requirement in self.requirements:
+            #     if 'torch==' in each_requirement:
+            #         # 如果是Pytorch，要从官网下载可支持版本，否则会出问题
+            #         pre_command_lines += ('RUN curl -kL http://download.pytorch.org/whl/torch/torch-1.9.0+cpu-cp36-cp36m-linux_x86_64.whl -O\n')
+            #         pre_command_lines += ('RUN pip install --timeout=1000000 torch-1.9.0+cpu-cp36-cp36m-linux_x86_64.whl\n')
+            #     elif 'torchvision' in each_requirement:
+            #         pre_command_lines += (
+            #             'RUN curl -kL https://download.pytorch.org/whl/torchvision/torchvision-0.10.0+cpu-cp36-cp36m-linux_x86_64.whl -O\n')
+            #         pre_command_lines += (
+            #             'RUN pip install --timeout=1000000 torchvision-0.10.0+cpu-cp36-cp36m-linux_x86_64.whl\n')
 
             requirements_lines = "RUN pip --timeout=1000000 install -r vsource_requirements.txt \n"
             templates = templates.format(pre_command_lines, requirements_lines)
