@@ -1,2 +1,10 @@
-./demo_performance.py
-./test_parser.py
+build
+dist
+test_algorithm/*
+
+vsource.egg-info
+demo_performance.py
+aaa.py
+test_algorithm.zip
+test_parser.py
+.idea

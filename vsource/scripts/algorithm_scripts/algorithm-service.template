@@ -5,9 +5,11 @@ import json
 import uuid
 import redis
 import kafka
+import socket
 import shutil
 import requests
 import traceback
+import threading
 import numpy as np
 
 from urllib.request import urlopen
@@ -15,6 +17,34 @@ from urllib.request import urlopen
 import vsource_configs
 
 {import-lines}
+
+def send_heartbeat(algorithm_name, algorithm_version, send_interval=1):
+    print('Starting heartbeat, algorithm_name: ', algorithm_name, "algorithm_version: ", algorithm_version)
+    def get_ip(dns='8.8.8.8', port=80):
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect((dns, port))
+            ip = s.getsockname()[0]
+        finally:
+            s.close()
+        return ip
+    while True:
+        try:
+            receive_url = 'http://120.26.143.61:17780/receive_heartbeat'
+            from_ip = get_ip()
+            send_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
+            params = {
+                'algorithm_name': algorithm_name,
+                'algorithm_version': algorithm_version,
+                'from_ip': from_ip,
+                'send_time': send_time
+            }
+            resp = requests.post(receive_url, data=params)
+            print(resp.content)
+            time.sleep(send_interval)
+        except Exception as e:
+            time.sleep(send_interval)
+            continue
 
 class Service:
     def __init__(self):
@@ -56,6 +86,8 @@ class Service:
 
     def start(self):
         print('[Calculator Init]', self.algorithm_name, 'Service Starting...')
+        t1 = threading.Thread(target=send_heartbeat, args=('{ALGORITHM_NAME}', '{ALGORITHM_VERSION}',))
+        t1.start()
         r = redis.Redis(host=self.redis_host, port=self.redis_port)
         time.sleep(vsource_configs.sleep_interval)
         print('[Calculator Init] Init Successfully!')

@@ -21,6 +21,6 @@ from vsource.algorithms.binary_segmentation import binary_segmentation
 from vsource.scripts.algorithm_scripts.algorithms import parse_algorithm
 from vsource.scripts.enroll_service import enroll
 
-__version__ = 'v1.0.21'
+__version__ = 'v1.0.22'
 __author__  = 'Ecohnoch'
 __email__   = 'chuyuan@vsource.club'
