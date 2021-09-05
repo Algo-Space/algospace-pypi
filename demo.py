@@ -13,7 +13,7 @@ if __name__ == '__main__':
     # vsource.login(username, password)
 
     username = 'api_user@vsource.club'
-    password = 'my_api_user_123'
+    password = 'my_api_user_123'    # 测试密码，已经被修改了
     vsource.login(username, password) # 先登录
 
     # # Face Recognition
