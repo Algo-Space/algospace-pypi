@@ -1,5 +1,4 @@
 import os
-import inspect
 import traceback
 
 class AlgorithmContainerConfigParser:
@@ -11,6 +10,8 @@ class AlgorithmContainerConfigParser:
 
     def pre_check(self, config):
         try:
+            self.login_username    = config['login_username']
+            self.login_password    = config['login_password']
             self.service_dir       = config['service-dir']
             self.service_filename  = config['service-filename']
             if str(self.service_filename).endswith('.py'):
@@ -18,6 +19,7 @@ class AlgorithmContainerConfigParser:
             self.service_interface = config['service-interface']
             self.algorithm_name    = config['algorithm-name']
             self.algorithm_version = config['version']
+            self.algorithm_port    = config['port']
             self.requirements      = config['requirements']
             self.pre_command       = config['pre-command']
             self.input_params      = config['input-params']
@@ -54,9 +56,8 @@ class AlgorithmContainerConfigParser:
                     else:
                         f.write(each_requirement)
                         f.write('\n')
-                f.write("redis\n")
-                f.write('kafka-python\n')
                 f.write('requests\n')
+                f.write('vsource\n')
             print('[Step 1/6] Requirements has been successfully generated!')
         except Exception as e:
             err_msg = traceback.format_exc()
@@ -73,19 +74,11 @@ class AlgorithmContainerConfigParser:
             for each_command in self.pre_command:
                 pre_command_lines += ("RUN " + each_command + "\n")
 
-            # for each_requirement in self.requirements:
-            #     if 'torch==' in each_requirement:
-            #         # 如果是Pytorch，要从官网下载可支持版本，否则会出问题
-            #         pre_command_lines += ('RUN curl -kL http://download.pytorch.org/whl/torch/torch-1.9.0+cpu-cp36-cp36m-linux_x86_64.whl -O\n')
-            #         pre_command_lines += ('RUN pip install --timeout=1000000 torch-1.9.0+cpu-cp36-cp36m-linux_x86_64.whl\n')
-            #     elif 'torchvision' in each_requirement:
-            #         pre_command_lines += (
-            #             'RUN curl -kL https://download.pytorch.org/whl/torchvision/torchvision-0.10.0+cpu-cp36-cp36m-linux_x86_64.whl -O\n')
-            #         pre_command_lines += (
-            #             'RUN pip install --timeout=1000000 torchvision-0.10.0+cpu-cp36-cp36m-linux_x86_64.whl\n')
+            templates = templates.replace("{PRE_PROCESS}", pre_command_lines)
 
             requirements_lines = "RUN pip --timeout=1000000 install -r vsource_requirements.txt \n"
-            templates = templates.format(pre_command_lines, requirements_lines)
+
+            templates = templates.replace("{PIP_PROCESS}", requirements_lines)
 
             with open(os.path.join(self.service_dir, 'vsource_dockerfile'), 'w') as f:
                 f.write(templates)
@@ -115,6 +108,9 @@ class AlgorithmContainerConfigParser:
             with open(os.path.join(self.cur_dir, 'algorithm-service.template'), 'r') as f:
                 templates = f.read()
             import_lines = 'import {}'.format(self.service_filename)
+
+            templates = templates.replace("{IMPORT_LINES}", import_lines)
+
             param_init_lines = ""
             for each_input_param_name in self.input_params:
                 param_init_lines += ('            {} = info_dict[\'{}\']\n'.format(each_input_param_name, each_input_param_name))
@@ -128,6 +124,7 @@ class AlgorithmContainerConfigParser:
                     param_init_lines += ('            {} = str({})\n'.format(each_input_param_name, each_input_param_name))
                 else:
                     param_init_lines += ('            {} = {}({})\n'.format(each_input_param_name, self.input_params[each_input_param_name]['type'],  each_input_param_name))
+
             function_lines =  "            out = {}.{}(".format(self.service_filename, self.service_interface)
             if len(list(self.input_params.keys())) == 0:
                 function_lines += ")\n"
@@ -141,8 +138,8 @@ class AlgorithmContainerConfigParser:
                     function_lines += '            {} = self.write_file({})\n'.format(each_output_param, 'out[\'{}\']'.format(each_output_param))
                     function_lines += '            out[\'{}\'] = {}\n'.format(each_output_param, each_output_param)
             output_lines = "            return out\n"
-            templates = templates.replace('{import-lines}', import_lines)
-            templates = templates.replace('{function-lines}', param_init_lines + function_lines + output_lines)
+
+            templates = templates.replace('{FUNCTION_LINES}', param_init_lines + function_lines + output_lines)
 
             lower_name = self.algorithm_name.replace('-', '_').replace('.', '_').lower()
             lower_version = self.algorithm_version.replace('-', '_').replace('.', '_').lower()
@@ -162,10 +159,29 @@ class AlgorithmContainerConfigParser:
         try:
             with open(os.path.join(self.cur_dir, 'algorithm-deploy-compose.template'), 'r') as f:
                 templates = f.read()
+
+                # {ALGORITHM_FULL_NAME}:
+                # image: 120.26
+                # .143
+                # .61: 10020 / service / {ALGORITHM_NAME}:{ALGORITHM_VERSION}
+                # environment:
+                # LOGIN_USERNAME: {LOGIN_USERNAME}
+                # LOGIN_PASSWORD: {LOGIN_PASSWORD}
+                # STORAGE_HOST: http: // 120.26
+                # .143
+                # .61: 13402
+                # ALGORITHM_NAME: {ALGORITHM_NAME}
+                # ALGORITHM_VERSION: {ALGORITHM_VERSION}
+                # ALGORITHM_PORT: {ALGORITHM_PORT}
+
             lower_name = self.algorithm_name.replace('_', '-').lower()
-            templates = templates.format(
-                self.algorithm_name, lower_name, self.algorithm_version, self.algorithm_name, self.algorithm_version
-            )
+            templates = templates.replace("{ALGORITHM_FULL_NAME}", lower_name)
+            templates = templates.replace("{ALGORITHM_NAME}", self.algorithm_name)
+            templates = templates.replace("{ALGORITHM_VERSION}", self.algorithm_version)
+            templates = templates.replace("{ALGORITHM_PORT}",  self.algorithm_port)
+            templates = templates.replace("{LOGIN_USERNAME}", self.login_username)
+            templates = templates.replace("{LOGIN_PASSWORD}", self.login_password)
+
             with open(os.path.join(self.service_dir, 'vsource_deploy_compose.yaml'), 'w') as f:
                 f.write(templates)
             print('[Step 5/6] Deployment compose file has been successfully generated!')
@@ -204,8 +220,13 @@ class AlgorithmContainerConfigParser:
         try:
             with open(os.path.join(self.cur_dir, 'algorithm-local-start.template'), 'r') as f:
                 templates = f.read()
-            templates = templates.replace("[ALGORITHM_NAME]", self.algorithm_name)
-            templates = templates.replace("[ALGORITHM_VERSION]", self.algorithm_version)
+
+            templates = templates.replace("{ALGORITHM_NAME}", self.algorithm_name)
+            templates = templates.replace("{ALGORITHM_VERSION}", self.algorithm_version)
+            templates = templates.replace("{ALGORITHM_PORT}", self.algorithm_port)
+            templates = templates.replace("{LOGIN_USERNAME}", self.login_username)
+            templates = templates.replace("{LOGIN_PASSWORD}", self.login_password)
+
             with open(os.path.join(self.service_dir, 'vsource_local_start.sh'), 'w') as f:
                 f.write(templates)
             print('[Step Local] Local start script has been successfully generated!')
@@ -231,6 +252,9 @@ def parse_algorithm(config):
 
 if __name__ == '__main__':
     config = {
+        'login_username': '用户',
+        'login_password': '密码',
+        'port': '12345',
         'algorithm-name': 'new_algorithm',
         'version': '1.0.1',
         'author': 'xcy',
