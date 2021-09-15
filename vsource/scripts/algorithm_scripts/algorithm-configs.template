@@ -6,6 +6,7 @@ app_algorithm_name = str(os.environ.get('ALGORITHM_NAME'))
 app_algorithm_version = str(os.environ.get('ALGORITHM_VERSION'))
 app_algorithm_port = int(os.environ.get('ALGORITHM_PORT'))
 app_storage_host = os.environ.get('STORAGE_HOST')
+app_env_ip = os.environ.get("ENV_IP")
 
 app_algorithm_full_name = app_algorithm_name + '_' + app_algorithm_version
 lower_name = app_algorithm_full_name.replace('-', '_').replace('.',  '_').lower()
@@ -13,6 +14,7 @@ upper_name = app_algorithm_full_name.replace('-', '_').replace('.',  '_').upper(
 
 ask_data_url = 'http://120.26.143.61:{}/{}/ask_data'.format(app_algorithm_port, lower_name)
 return_ans_url = 'http://120.26.143.61:{}/{}/return_ans'.format(app_algorithm_port, lower_name)
+return_err_url = 'http://120.26.143.61:{}/{}/error_ans'.format(app_algorithm_port, lower_name)
 
 call_interval  = 1
 sleep_interval = 7

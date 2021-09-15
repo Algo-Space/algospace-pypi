@@ -42,19 +42,12 @@ class AlgorithmContainerConfigParser:
                     if 'torch==' in each_requirement.replace(' ', ''):
                         # 如果是Pytorch，要从官网下载可支持版本，否则会出问题，查看Dockerfile那里
                         f.write('--find-links https://download.pytorch.org/whl/torch_stable.html\n')
-                        if each_requirement.replace(' ', '').endswith('+cpu'):
-                            f.write(each_requirement+'+cpu\n')
-                        else:
-                            f.write(each_requirement + '\n')
+                        f.write(each_requirement + '\n')
                     elif 'torchvision' in each_requirement:
                         f.write('--find-links https://download.pytorch.org/whl/torch_stable.html\n')
-                        if each_requirement.replace(' ', '').endswith('+cpu'):
-                            f.write(each_requirement+'+cpu\n')
-                        else:
-                            f.write(each_requirement + '\n')
-                        f.write('\n')
+                        f.write(each_requirement + '\n')
                     else:
-                        f.write(each_requirement)
+                        f.write(each_requirement + '\n')
                         f.write('\n')
                 f.write('requests\n')
                 f.write('vsource\n')
@@ -176,7 +169,7 @@ class AlgorithmContainerConfigParser:
 
             lower_name = self.algorithm_name.replace('_', '-').lower()
             templates = templates.replace("{ALGORITHM_FULL_NAME}", lower_name)
-            templates = templates.replace("{ALGORITHM_NAME}", self.algorithm_name)
+            templates = templates.replace("{ALGORITHM_NAME}", self.algorithm_name.replace('_', '-').lower())
             templates = templates.replace("{ALGORITHM_VERSION}", self.algorithm_version)
             templates = templates.replace("{ALGORITHM_PORT}",  self.algorithm_port)
             templates = templates.replace("{LOGIN_USERNAME}", self.login_username)
@@ -252,36 +245,32 @@ def parse_algorithm(config):
 
 if __name__ == '__main__':
     config = {
-        'login_username': '用户',
-        'login_password': '密码',
-        'port': '12345',
-        'algorithm-name': 'new_algorithm',
-        'version': '1.0.1',
-        'author': 'xcy',
-        'service-dir': '/Users/ecohnoch/Desktop/VSOURCE_PLATFORM/algorithm_api/new_algorithm',
-        'service-filename': 'test_function.py',
-        'service-interface': 'random_number',
+        'login_username': 'test@vsource.club',
+        'login_password': 'xcyDBIIR',
+        'port': '17780',
+        'algorithm-name': 'face_attribute',
+        'version': 'fsx-0.1',
+        'author': 'fsx@vsource.club',
+        'service-dir': '/Users/ecohnoch/Desktop/deepface3',
+        'service-filename': 'function.py',
+        'service-interface': 'service',
         'requirements': [
-            'numpy==1.19.0',
-            'opencv-python',
-            'requests'
+            'torch==1.9.0+cpu',
+            'torchvision==0.10.0+cpu',
+            'opencv-python'
         ],
         'pre-command': [
             'apt install -y libgl1-mesa-glx'
         ],
         'input-params': {
-            'lower': {
-                'type': 'float',
-                'describe': 'lower limit for thin function'
-            },
-            'upper': {
-                'type': 'float',
-                'describe': 'upper limit for thin function'
-            },
+            'face_path': {
+                'type': 'path',
+                'describe': 'face path'
+            }
         },
         'output-params': {
             'result': {
-                'type': 'float',
+                'type': 'str',
                 'describe': 'calculated  result'
             }
         }

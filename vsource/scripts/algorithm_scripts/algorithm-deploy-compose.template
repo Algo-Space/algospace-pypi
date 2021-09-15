@@ -1,7 +1,7 @@
 version: '3.1'
 services:
   {ALGORITHM_FULL_NAME}:
-    image: 120.26.143.61:10020/service/{ALGORITHM_NAME}:{ALGORITHM_VERSION}
+    image: vsource/{ALGORITHM_NAME}:{ALGORITHM_VERSION}
     environment:
       LOGIN_USERNAME: {LOGIN_USERNAME}
       LOGIN_PASSWORD: {LOGIN_PASSWORD}

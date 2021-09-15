@@ -34,6 +34,7 @@ class Service:
         self.return_ans_url = vsource_configs.return_ans_url
         self.login_username = vsource_configs.app_login_username
         self.login_password = vsource_configs.app_login_password
+        self.return_error_url = vsource_configs.return_err_url
 
     def read_file(self, path):
         # /get_files/<namespace>/<user>/<timestamp>/<filename>
@@ -70,7 +71,11 @@ class Service:
         print('[Calculator Init]', self.algorithm_name, 'Init Successfully!')
         while True:
             try:
-                from_ip = get_ip()
+                from_ip = ""
+                if vsource_configs.app_env_ip is not None:
+                    from_ip = vsource_configs.app_env_ip
+                else:
+                    from_ip = get_ip()
 
                 vsource.login(self.login_username, self.login_password)
                 headers = {'Cookie': vsource.loginInstance.login_instance.cookie}
@@ -95,15 +100,15 @@ class Service:
                     ans_str = json.dumps(ans)
 
                     return_ans_param = {'out': ans_str}
-                    return_ans_resp  = requests.post(self.return_ans_url, param=return_ans_param, headers=headers)
-                    return_ans_dict  = json.loads(return_ans_resp)
+                    return_ans_resp  = requests.post(self.return_ans_url, data=return_ans_param, headers=headers)
+                    return_ans_dict  = json.loads(return_ans_resp.content)
 
                     if return_ans_dict['status'] != 200:
                         err_msg = self.algorithm_name.lower() + "Service Result Return Error."
                         raise Exception(err_msg)
                 except Exception as e:
                     return_error_param = {'err_msg': json.dumps(input_params)}
-                    return_error_resp  = requests.post(self.return_error_url, param=return_error_param, headers=headers)
+                    return_error_resp  = requests.post(self.return_error_url, data=return_error_param, headers=headers)
                 if os.path.exists('tmp'):
                     shutil.rmtree('tmp')
             except Exception as e:
