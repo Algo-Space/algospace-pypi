@@ -244,37 +244,4 @@ def parse_algorithm(config):
     a.generate()
 
 if __name__ == '__main__':
-    config = {
-        'login_username': 'test@vsource.club',
-        'login_password': 'xcyDBIIR',
-        'port': '17780',
-        'algorithm-name': 'face_attribute',
-        'version': 'fsx-0.1',
-        'author': 'fsx@vsource.club',
-        'service-dir': '/Users/ecohnoch/Desktop/deepface3',
-        'service-filename': 'function.py',
-        'service-interface': 'service',
-        'requirements': [
-            'torch==1.9.0+cpu',
-            'torchvision==0.10.0+cpu',
-            'opencv-python'
-        ],
-        'pre-command': [
-            'apt install -y libgl1-mesa-glx'
-        ],
-        'input-params': {
-            'face_path': {
-                'type': 'path',
-                'describe': 'face path'
-            }
-        },
-        'output-params': {
-            'result': {
-                'type': 'str',
-                'describe': 'calculated  result'
-            }
-        }
-    }
-
-    a = AlgorithmContainerConfigParser(config)
-    a.generate()
+    pass

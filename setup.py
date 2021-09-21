@@ -10,7 +10,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='vsource',
-    version='v1.1.1',
+    version='v1.1.2',
     description=(
         'Algorithm python library linked to vsource platform.'
     ),

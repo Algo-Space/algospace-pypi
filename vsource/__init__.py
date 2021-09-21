@@ -22,6 +22,6 @@ from vsource.algorithms.face_attribute_x import face_attribute_x
 from vsource.scripts.algorithm_scripts.algorithms import parse_algorithm
 from vsource.scripts.enroll_service import enroll
 
-__version__ = 'v1.1.1'
+__version__ = 'v1.1.2'
 __author__  = 'Ecohnoch'
 __email__   = 'chuyuan@vsource.club'

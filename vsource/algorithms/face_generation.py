@@ -15,9 +15,9 @@ from vsource.loginInstance import login_instance
 import vsource.configs as configs
 
 def face_generation(version='none', max_interval=configs.max_interval):
-    if version == 'none':
+    if version is None or version == 'none':
         algorithm_name = 'face-generation'
-        algorithm_version = '1.0.1'
+        algorithm_version = 'xcy-stylegan-1'
         algorithm_port = 15124
     elif version == 'test':
         algorithm_name = 'face-generation-test'
