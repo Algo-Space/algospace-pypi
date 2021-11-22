@@ -24,6 +24,6 @@ from vsource.algorithms.github_avatar_generation import github_avatar_generation
 from vsource.scripts.algorithm_scripts.algorithms import parse_algorithm
 from vsource.scripts.enroll_service import enroll
 
-__version__ = 'v1.1.3'
+__version__ = 'v1.1.4'
 __author__  = 'Ecohnoch'
 __email__   = 'chuyuan@vsource.club'
