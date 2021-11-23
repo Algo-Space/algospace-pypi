@@ -8,3 +8,4 @@ aaa.py
 test_algorithm.zip
 test_parser.py
 .idea
+__pycache__

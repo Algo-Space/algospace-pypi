@@ -21,10 +21,11 @@ from vsource.algorithms.face_attribute_x import face_attribute_x
 from vsource.algorithms.text_generation import text_generation
 from vsource.algorithms.github_avatar_generation import github_avatar_generation
 from vsource.algorithms.anime_gan_v2 import anime_generation
+from vsource.algorithms.maze_generation import maze_generation
 
 from vsource.scripts.algorithm_scripts.algorithms import parse_algorithm
 from vsource.scripts.enroll_service import enroll
 
-__version__ = 'v1.1.4'
+__version__ = 'v1.1.5'
 __author__  = 'Ecohnoch'
 __email__   = 'chuyuan@vsource.club'

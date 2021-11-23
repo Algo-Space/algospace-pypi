@@ -14,7 +14,7 @@ import vsource.exceptions as exceptions
 from vsource.loginInstance import login_instance
 import vsource.configs as configs
 
-def anime_generation(image_path,  max_interval=200):
+def anime_generation(image_path, max_interval=configs.max_interval):
 
     algorithm_name = 'AnimaGAN'
     algorithm_version = 'v2.0.0'
