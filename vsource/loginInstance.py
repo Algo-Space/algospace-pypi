@@ -1,7 +1,12 @@
-# -*- coding: utf-8 -*-
-# @Author   : Ecohnoch(xcy)
-# @File     : loginInfoInsance.py
-# @Function : TODO
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+'''
+@Description: 
+@Author: Ecohnoch(xcy)
+@Date: 2022-10-06 12:30:47
+@LastEditors: Kermit
+@LastEditTime: 2022-10-25 22:11:45
+'''
 
 import json
 import requests

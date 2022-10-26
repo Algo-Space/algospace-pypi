@@ -19,7 +19,6 @@ class AlgorithmContainerConfigParser:
             self.service_interface = config['service-interface']
             self.algorithm_name    = config['algorithm-name']
             self.algorithm_version = config['version']
-            self.algorithm_port    = config['port']
             self.requirements      = config['requirements']
             self.pre_command       = config['pre-command']
             self.input_params      = config['input-params']
@@ -54,7 +53,7 @@ class AlgorithmContainerConfigParser:
             print('[Step 1/6] Requirements has been successfully generated!')
         except Exception as e:
             err_msg = traceback.format_exc()
-            print('[Step 2 Error, Requirements Generated Failed]: ' + err_msg)
+            print('[Step 1 Error, Requirements Generated Failed]: ' + err_msg)
             traceback.print_exc()
 
     # 第二步，生成dockerfile
@@ -84,7 +83,7 @@ class AlgorithmContainerConfigParser:
     # 第三步，生成vsource_configs.py
     def gen_configs(self):
         try:
-            with open(os.path.join(self.cur_dir, 'algorithm-configs.template'), 'r') as f:
+            with open(os.path.join(self.cur_dir, 'algorithm-configs.py.template'), 'r') as f:
                 templates = f.read()
 
             with open(os.path.join(self.service_dir, 'vsource_configs.py'), 'w') as f:
@@ -98,7 +97,7 @@ class AlgorithmContainerConfigParser:
     # 第四步，service.py
     def gen_service(self):
         try:
-            with open(os.path.join(self.cur_dir, 'algorithm-service.template'), 'r') as f:
+            with open(os.path.join(self.cur_dir, 'algorithm-service.py.template'), 'r') as f:
                 templates = f.read()
             import_lines = 'import {}'.format(self.service_filename)
 
@@ -150,28 +149,13 @@ class AlgorithmContainerConfigParser:
     # 第五步，deployment-compose.yaml
     def gen_deployment_compose(self):
         try:
-            with open(os.path.join(self.cur_dir, 'algorithm-deploy-compose.template'), 'r') as f:
+            with open(os.path.join(self.cur_dir, 'algorithm-deploy-compose.yaml.template'), 'r') as f:
                 templates = f.read()
-
-                # {ALGORITHM_FULL_NAME}:
-                # image: 120.26
-                # .143
-                # .61: 10020 / service / {ALGORITHM_NAME}:{ALGORITHM_VERSION}
-                # environment:
-                # LOGIN_USERNAME: {LOGIN_USERNAME}
-                # LOGIN_PASSWORD: {LOGIN_PASSWORD}
-                # STORAGE_HOST: http: // 120.26
-                # .143
-                # .61: 13402
-                # ALGORITHM_NAME: {ALGORITHM_NAME}
-                # ALGORITHM_VERSION: {ALGORITHM_VERSION}
-                # ALGORITHM_PORT: {ALGORITHM_PORT}
 
             lower_name = self.algorithm_name.replace('_', '-').lower()
             templates = templates.replace("{ALGORITHM_FULL_NAME}", lower_name)
             templates = templates.replace("{ALGORITHM_NAME}", self.algorithm_name.replace('_', '-').lower())
             templates = templates.replace("{ALGORITHM_VERSION}", self.algorithm_version)
-            templates = templates.replace("{ALGORITHM_PORT}",  self.algorithm_port)
             templates = templates.replace("{LOGIN_USERNAME}", self.login_username)
             templates = templates.replace("{LOGIN_PASSWORD}", self.login_password)
 
@@ -186,19 +170,19 @@ class AlgorithmContainerConfigParser:
     # 第六步，control文件生成
     def gen_control_script(self):
         try:
-            with open(os.path.join(self.cur_dir, 'algorithm-start.template'), 'r') as f:
+            with open(os.path.join(self.cur_dir, 'algorithm-start.sh.template'), 'r') as f:
                 templates = f.read()
             with open(os.path.join(self.service_dir, 'vsource_start.sh'), 'w') as f:
                 lower_name = self.algorithm_name.replace('_', '-').lower()
                 templates = templates.format(lower_name, self.algorithm_version)
                 f.write(templates)
 
-            with open(os.path.join(self.cur_dir, 'algorithm-stop.template'), 'r') as f:
+            with open(os.path.join(self.cur_dir, 'algorithm-stop.sh.template'), 'r') as f:
                 templates = f.read()
             with open(os.path.join(self.service_dir, 'vsource_stop.sh'), 'w') as f:
                 f.write(templates)
 
-            with open(os.path.join(self.cur_dir, 'algorithm-logs.template'), 'r') as f:
+            with open(os.path.join(self.cur_dir, 'algorithm-logs.sh.template'), 'r') as f:
                 templates = f.read()
             with open(os.path.join(self.service_dir, 'vsource_logs.sh'), 'w') as f:
                 f.write(templates)
@@ -211,12 +195,11 @@ class AlgorithmContainerConfigParser:
 
     def generate_local_start_script(self):
         try:
-            with open(os.path.join(self.cur_dir, 'algorithm-local-start.template'), 'r') as f:
+            with open(os.path.join(self.cur_dir, 'algorithm-local-start.sh.template'), 'r') as f:
                 templates = f.read()
 
             templates = templates.replace("{ALGORITHM_NAME}", self.algorithm_name)
             templates = templates.replace("{ALGORITHM_VERSION}", self.algorithm_version)
-            templates = templates.replace("{ALGORITHM_PORT}", self.algorithm_port)
             templates = templates.replace("{LOGIN_USERNAME}", self.login_username)
             templates = templates.replace("{LOGIN_PASSWORD}", self.login_password)
 

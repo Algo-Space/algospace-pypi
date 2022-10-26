@@ -28,10 +28,10 @@ def get_ip(dns='8.8.8.8', port=80):
 
 class Service:
     def __init__(self):
-        self.storage_host = vsource_configs.app_storage_host
         self.algorithm_name = vsource_configs.app_algorithm_full_name
         self.ask_data_url = vsource_configs.ask_data_url
         self.return_ans_url = vsource_configs.return_ans_url
+        self.storage_host = vsource_configs.storage_host
         self.login_username = vsource_configs.app_login_username
         self.login_password = vsource_configs.app_login_password
         self.return_error_url = vsource_configs.return_err_url

@@ -2,9 +2,7 @@ pip install requests
 
 export LOGIN_USERNAME={LOGIN_USERNAME}
 export LOGIN_PASSWORD={LOGIN_PASSWORD}
-export STORAGE_HOST=http://120.26.143.61:13402
 export ALGORITHM_NAME={ALGORITHM_NAME}
 export ALGORITHM_VERSION={ALGORITHM_VERSION}
-export ALGORITHM_PORT={ALGORITHM_PORT}
 
 nohup python -u vsource_service.py > vsource.log 2>&1 &
