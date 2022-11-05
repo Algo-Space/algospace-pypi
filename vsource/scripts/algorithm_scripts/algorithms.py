@@ -50,6 +50,7 @@ class AlgorithmContainerConfigParser:
                         f.write('\n')
                 f.write('requests\n')
                 f.write('vsource\n')
+                f.write('gradio\n')
             print('[Step 1/6] Requirements has been successfully generated!')
         except Exception as e:
             err_msg = traceback.format_exc()

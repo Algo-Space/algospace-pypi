@@ -1,3 +1,23 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+'''
+@Description: 
+@Author: Kermit
+@Date: 2022-10-06 12:30:47
+@LastEditors: Kermit
+@LastEditTime: 2022-11-05 16:17:05
+'''
+
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+'''
+@Description: 
+@Author: Kermit
+@Date: 2022-10-06 12:30:47
+@LastEditors: Kermit
+@LastEditTime: 2022-11-05 16:17:04
+'''
+
 import os
 import json
 import time
@@ -5,7 +25,7 @@ import requests
 import traceback
 
 import vsource.exceptions as exceptions
-from vsource.loginInstance import login_instance
+from vsource.login import login_instance
 import vsource.configs as configs
 
 def face_recognition(face_path1, face_path2, max_interval=configs.max_interval):

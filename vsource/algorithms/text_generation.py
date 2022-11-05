@@ -9,7 +9,7 @@ import time
 import requests
 
 import vsource.exceptions as exceptions
-from vsource.loginInstance import login_instance
+from vsource.login import login_instance
 import vsource.configs as configs
 
 def text_generation(max_len, version='none', max_interval=configs.max_interval):

@@ -1,9 +1,18 @@
-# -*- coding: utf-8 -*-
-# @Author   : Ecohnoch(xcy)
-# @File     : __init__.py.py
-# @Function : TODO
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+'''
+@Description: 
+@Author: Ecohnoch(xcy)
+@Date: 2022-10-06 12:30:47
+@LastEditors: Kermit
+@LastEditTime: 2022-11-05 16:16:46
+'''
 
-from vsource.loginInstance import login
+from . import login
+from . import configs
+
+from vsource.login import login
+
 from vsource.algorithms.face_recognition import face_recognition
 from vsource.algorithms.face_detection import face_detection
 from vsource.algorithms.face_attribute import face_attribute
@@ -27,5 +36,5 @@ from vsource.scripts.algorithm_scripts.algorithms import parse_algorithm
 from vsource.scripts.enroll_service import enroll
 
 __version__ = 'v1.1.5'
-__author__  = 'Ecohnoch'
+__author__  = 'DBIIR'
 __email__   = 'chuyuan@vsource.club'

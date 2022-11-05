@@ -1,10 +1,12 @@
-# -*- coding: utf-8 -*-
-# @Author   : Ecohnoch(xcy)
-# @File     : setup.py
-# @Function : TODO
-
 #!/usr/bin/env python
-# coding=utf-8
+# -*- coding:utf-8 -*-
+'''
+@Description: 
+@Author: Kermit
+@Date: 2022-10-06 12:30:47
+@LastEditors: Kermit
+@LastEditTime: 2022-11-05 16:46:46
+'''
 
 from setuptools import setup, find_packages
 
@@ -34,5 +36,10 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Topic :: Software Development :: Libraries'
     ],
-    include_package_data=True
+    include_package_data=True,
+    entry_points={
+        'console_scripts': [
+            'vsource = vsource',
+        ]
+    }
 )

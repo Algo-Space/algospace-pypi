@@ -10,16 +10,11 @@ app_algorithm_full_name = app_algorithm_name + '_' + app_algorithm_version
 lower_name = app_algorithm_full_name.replace('-', '_').replace('.',  '_').lower()
 upper_name = app_algorithm_full_name.replace('-', '_').replace('.',  '_').upper()
 
-ask_data_url = 'https://vsource.club/algo/{}/ask_data'.format(lower_name)
-return_ans_url = 'https://vsource.club/algo/{}/return_ans'.format(lower_name)
-return_err_url = 'https://vsource.club/algo/{}/error_ans'.format(lower_name)
-storage_host = 'https://vsource.club/core/storage'
+ask_data_url = 'https://vsource.club/algo/{}/service/ask_data'.format(lower_name)
+return_ans_url = 'https://vsource.club/algo/{}/service/return_ans'.format(lower_name)
+return_err_url = 'https://vsource.club/algo/{}/service/error_ans'.format(lower_name)
+gradio_upload_url = 'https://vsource.club/algo/{}/gradio_worker/upload'.format(lower_name)
+storage_file_url = 'https://vsource.club/core/storage/file'
 
 call_interval  = 1
 sleep_interval = 7
-
-# --------------
-print('app_login_username:', app_login_username)
-print('app_algorithm_name:', app_algorithm_name)
-print('app_algorithm_version:',  app_algorithm_version)
-# --------------

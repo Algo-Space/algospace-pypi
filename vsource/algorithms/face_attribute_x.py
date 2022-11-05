@@ -11,7 +11,7 @@ import requests
 import traceback
 
 import vsource.exceptions as exceptions
-from vsource.loginInstance import login_instance
+from vsource.login import login_instance
 import vsource.configs as configs
 
 def face_attribute_x(image_path, version='fsx-0.1', max_interval=configs.max_interval):

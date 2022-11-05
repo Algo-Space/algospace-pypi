@@ -6,7 +6,7 @@ import traceback
 import vsource
 
 import vsource.exceptions as exceptions
-from vsource.loginInstance import login_instance
+from vsource.login import login_instance
 import vsource.configs as configs
 
 

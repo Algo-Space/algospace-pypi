@@ -1,3 +1,13 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+'''
+@Description: 
+@Author: Kermit
+@Date: 2022-10-06 12:30:47
+@LastEditors: Kermit
+@LastEditTime: 2022-11-05 16:16:59
+'''
+
 # -*- coding: utf-8 -*-
 # @Author   : patrickcty (Tianyang Cheng)
 # @File     : binary_segmentation.py
@@ -9,7 +19,7 @@ import time
 import requests
 
 import vsource.exceptions as exceptions
-from vsource.loginInstance import login_instance
+from vsource.login import login_instance
 import vsource.configs as configs
 
 config = {

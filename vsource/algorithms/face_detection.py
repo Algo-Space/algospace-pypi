@@ -5,7 +5,7 @@ import requests
 import traceback
 
 import vsource.exceptions as exceptions
-from vsource.loginInstance import login_instance
+from vsource.login import login_instance
 import vsource.configs as configs
 
 def face_detection(face_path):

@@ -1,3 +1,13 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+'''
+@Description: 
+@Author: Kermit
+@Date: 2022-10-06 12:30:47
+@LastEditors: Kermit
+@LastEditTime: 2022-11-05 16:17:18
+'''
+
 import os
 import json
 import time
@@ -5,7 +15,7 @@ import requests
 import traceback
 
 import vsource.exceptions as exceptions
-from vsource.loginInstance import login_instance
+from vsource.login import login_instance
 import vsource.configs as configs
 
 def speaker_recognition(speaker_path1, speaker_path2, max_interval=configs.max_interval):

@@ -1,3 +1,13 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+'''
+@Description: 
+@Author: Kermit
+@Date: 2022-10-06 12:30:47
+@LastEditors: Kermit
+@LastEditTime: 2022-11-05 16:17:14
+'''
+
 # -*- coding: utf-8 -*-
 # @Author   : Ecohnoch(xcy)
 # @File     : new_algorithm.py
@@ -11,7 +21,7 @@ import requests
 import traceback
 
 import vsource.exceptions as exceptions
-from vsource.loginInstance import login_instance
+from vsource.login import login_instance
 import vsource.configs as configs
 
 def maze_generation(height=10, width=10, max_interval=configs.max_interval):
