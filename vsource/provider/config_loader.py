@@ -5,11 +5,12 @@
 @Author: Kermit
 @Date: 2022-11-05 20:19:06
 @LastEditors: Kermit
-@LastEditTime: 2022-11-06 00:27:54
+@LastEditTime: 2022-11-07 16:27:54
 '''
 
 import os
 import sys
+import re
 from typing import Callable, Optional
 from vsource.exceptions import ConfigError
 
@@ -23,6 +24,7 @@ class ConfigLoader:
         config_filename_noext = os.path.splitext(config_filename)[0]
         sys.path.insert(0, config_dirpath)
         config = __import__(config_filename_noext)
+        sys.path.pop(0)
 
         self.name: str = getattr(config, 'name', '')
         self.version: str = getattr(config, 'version', '')
@@ -44,11 +46,15 @@ class ConfigLoader:
             raise ConfigError('ConfigError: \'name\' is not str.')
         if len(self.name) == 0:
             raise ConfigError('ConfigError: \'name\' is empty.')
+        if not bool(re.match('^[a-zA-Z0-9_\-@]+$', self.name)):
+            raise ConfigError('ConfigError: \'name\' can only include \'a-z A-Z 0-9 _ - @\'.')
 
         if type(self.version) != str:
             raise ConfigError('ConfigError: \'version\' is not str.')
         if len(self.version) == 0:
             raise ConfigError('ConfigError: \'version\' is empty.')
+        if not bool(re.match('^[a-zA-Z0-9\.]+$', self.version)):
+            raise ConfigError('ConfigError: \'version\' can only include \'a-z A-Z 0-9 .\'.')
 
         if type(self.username) != str:
             raise ConfigError('ConfigError: \'username\' is not str.')
@@ -120,7 +126,8 @@ class ConfigLoader:
     def _import_service_file(self):
         service_path = self._get_service_file_info()['service_path']
         service_filename_noext = self._get_service_file_info()['service_filename_noext']
-        sys.path.insert(0, service_path)
+        if service_path not in sys.path:
+            sys.path.insert(0, service_path)
         return __import__(service_filename_noext)
 
     def _get_service_file_info(self) -> dict:

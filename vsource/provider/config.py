@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-24 14:45:40
 @LastEditors: Kermit
-@LastEditTime: 2022-11-05 21:24:37
+@LastEditTime: 2022-11-07 16:09:32
 '''
 
 import os
@@ -51,3 +51,7 @@ class Algoinfo:
     @property
     def storage_file_url(self):
         return 'https://vsource.club/core/storage/file'
+
+    @property
+    def gradio_page(self):
+        return f'https://vsource.club/algo/{self.lower_name}/gradio/'

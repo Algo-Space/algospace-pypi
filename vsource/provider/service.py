@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-11-06 01:04:50
+@LastEditTime: 2022-11-07 16:51:17
 '''
 
 from typing import Callable
@@ -16,10 +16,14 @@ import gradio as gr
 import asyncio
 import multiprocessing
 from multiprocessing.synchronize import Lock
+from multiprocessing.connection import Connection
+import threading
+import socket
 import traceback
 import requests
 from vsource.login import login, login_instance
 from .config_loader import ConfigLoader, valid_param_type
+from .stdio import GradioPrint
 import shutil
 import json
 import time
@@ -91,6 +95,7 @@ class ApiService:
 
     def handle(self, input_info: dict) -> dict:
         ''' 处理请求 '''
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Api Service] Begin to handle.')
         params = {}
         for key, info in self.algorithm_config.service_input.items():
             params[key] = self.get_type_class(info['type'])(input_info[key])
@@ -98,6 +103,7 @@ class ApiService:
         output_info = {}
         for key, info in self.algorithm_config.service_output.items():
             output_info[key] = self.get_type_class(info['type'])(out[key])
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Api Service] Complete.')
         return output_info
 
 
@@ -127,7 +133,7 @@ class GradioService:
         else:
             return gr.Textbox(placeholder=describe)
 
-    def launch(self, fn_lock: Lock) -> None:
+    def launch(self, fn_lock: Lock, gradio_port_con: Connection) -> None:
         ''' 启动 Gradio 服务 '''
         def fn(*args, **kwargs):
             try:
@@ -156,19 +162,52 @@ class GradioService:
             inputs=inputs,
             outputs=outputs,
         )
-        gr_interface.launch(
-            show_api=False,
-            show_tips=False,
-            favicon_path=None,
-            inline=True,
-            height=500,
-            width=900,
-            server_name=self.algorithm_config.gradio_server_host,
-            server_port=self.algorithm_config.gradio_server_port
-        )
+
+        self.check_port()
+        threading.Thread(target=self.check_launched, args=(gradio_port_con,), daemon=True).start()
+
+        with GradioPrint():
+            gr_interface.launch(
+                show_api=False,
+                show_tips=False,
+                favicon_path=None,
+                inline=True,
+                quiet=True,
+                height=500,
+                width=900,
+                server_name=self.algorithm_config.gradio_server_host,
+                server_port=self.algorithm_config.gradio_server_port
+            )
+
+    def check_port(self):
+        ''' 检测可用端口 '''
+        while (True):
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            state = sock.connect_ex((self.algorithm_config.gradio_server_host,
+                                    self.algorithm_config.gradio_server_port))
+            sock.close()
+            if state != 0:
+                break
+            self.algorithm_config.gradio_server_port += 1
+
+    def check_launched(self, gradio_port_con: Connection):
+        ''' 检测 Gradio 服务已经启动 '''
+        while (True):
+            time.sleep(1)
+            try:
+                html_text = requests.get(
+                    f'http://{self.algorithm_config.gradio_server_host}:{self.algorithm_config.gradio_server_port}').text
+                if len(html_text) == 0:
+                    raise
+                gradio_port_con.send(self.algorithm_config.gradio_server_port)
+                gradio_port_con.close()
+            except:
+                pass
 
     def handle(self, input_info: dict) -> dict:
         ''' 处理请求 '''
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Gradio Service] Begin to handle.')
+
         req_method = input_info['method']
         req_apipath = input_info['apipath']
         req_headers = input_info['headers']
@@ -198,10 +237,14 @@ class GradioService:
             }
         else:
             result = {}
+
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Gradio Service] Complete.')
         return result
 
     def handle_init(self) -> dict:
         ''' 处理 Gradio 初始化请求 '''
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Gradio Init] Begin to handle.')
+
         if not os.path.exists('./frontend'):
             gradio_path = '/'.join(gr.__file__.split('/')[:-1])
             gradio_frontend_path = os.path.join(gradio_path, 'templates/frontend')
@@ -236,6 +279,7 @@ class GradioService:
         res = requests.post(url, files={'file': file}, headers=login_instance.get_header())
         file.close()
 
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Gradio Init] Complete.')
         return {}
 
 
@@ -255,7 +299,15 @@ class Service:
         self.api_service = ApiService(self.algorithm_config, self.algorithm_info)
         self.gradio_service = GradioService(self.algorithm_config, self.algorithm_info)
 
-    def launch_service(self, fn_lock: Lock):
+    def launch_service(self, fn_lock: Lock, gradio_port_con: Connection):
+        # 从管道接受 Gradio 运行成功的端口
+        gradio_port = int(gradio_port_con.recv())
+        gradio_port_con.close()
+        self.algorithm_config.gradio_server_port = gradio_port
+
+        # 开始处理
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}] [Service] Start handling... The gradio url is: {self.algorithm_info.gradio_page}')
+        print('')
         while True:
             try:
                 # 轮询一条请求消息
@@ -287,25 +339,18 @@ class Service:
                     if req_info['type'] == 'api':
                         # 处理计算请求
                         try:
-                            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[API] Begin to handle.')
                             fn_lock.acquire()
                             result = self.api_service.handle(req_info['data'])
                             fn_lock.release()
-                            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[API] Complete.')
                         except:
                             fn_lock.release()
                             raise
                     elif req_info['type'] == 'gradio':
                         # 处理 Gradio 请求
-                        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Gradio] Begin to handle.')
                         result = self.gradio_service.handle(req_info['data'])
-                        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Gradio] Complete.')
                     elif req_info['type'] == 'gradio_init':
                         # 处理 Gradio 初始化请求
-                        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                              '[Gradio Init] Begin to handle.')
                         result = self.gradio_service.handle_init()
-                        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Gradio Init] Complete.')
                     else:
                         result = {}
 
@@ -353,35 +398,41 @@ class Service:
                 time.sleep(config.call_interval)
                 continue
 
-    def launch(self, type: str, fn_lock: Lock):
-        self.login()
+    def launch(self, type: str, fn_lock: Lock, gradio_port_con: Connection):
+        if not self.login():
+            exit(1)
         if type == 'SERVICE':
-            self.launch_service(fn_lock)
+            self.launch_service(fn_lock, gradio_port_con)
         elif type == 'GRADIO':
-            self.gradio_service.launch(fn_lock)
+            self.gradio_service.launch(fn_lock, gradio_port_con)
         else:
             raise Exception('Argument "type" is unaccessable.')
 
     def login(self):
         if not login(self.algorithm_config.username, self.algorithm_config.password):
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  f'[{self.algorithm_info.full_name}] Login failed. Please check your password.')
-            exit(1)
+                  f'[{self.algorithm_info.upper_name}] Login failed. Please check your password.')
+            return False
+        return True
 
     async def start(self):
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-              f'[{self.algorithm_info.full_name}] Service Starting...')
-        self.login()
+              f'[{self.algorithm_info.upper_name}] Initializing...')
+        if not self.login():
+            return
 
-        fn_lock = multiprocessing.Lock()
+        fn_lock = multiprocessing.Lock()  # 模型函数的锁
+        gradio_port_con1, gradio_port_con2 = multiprocessing.Pipe()  # 传递 Gradio 端口的管道
 
         def create_service_process():
-            service_process = multiprocessing.Process(target=self.launch, args=('SERVICE', fn_lock), daemon=True)
+            service_process = multiprocessing.Process(target=self.launch, args=(
+                'SERVICE', fn_lock, gradio_port_con2), daemon=True)
             service_process.start()
             return service_process
 
         def create_gradio_process():
-            gradio_process = multiprocessing.Process(target=self.launch, args=('GRADIO', fn_lock), daemon=True)
+            gradio_process = multiprocessing.Process(target=self.launch, args=(
+                'GRADIO', fn_lock, gradio_port_con1), daemon=True)
             gradio_process.start()
             return gradio_process
 
@@ -395,7 +446,7 @@ class Service:
         gradio_process = create_gradio_process()
 
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-              f'[{self.algorithm_info.full_name}] Init Successfully!')
+              f'[{self.algorithm_info.upper_name}] Waiting for service launched...')
 
         while True:
             await asyncio.sleep(1)
@@ -411,5 +462,5 @@ def run_service(config_path: str) -> None:
         service = Service(config_path)
         asyncio.run(service.start())
     except:
-        # traceback.print_exc()
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Vsource] Exit.')
+        traceback.print_exc()
+    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Vsource] Exit.')

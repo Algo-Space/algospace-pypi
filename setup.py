@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-11-05 16:46:46
+@LastEditTime: 2022-11-07 14:01:31
 '''
 
 from setuptools import setup, find_packages
@@ -40,6 +40,7 @@ setup(
     entry_points={
         'console_scripts': [
             'vsource = vsource',
+            'vsc = vsource'
         ]
     }
 )
