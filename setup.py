@@ -5,14 +5,14 @@
 @Author: Kermit
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-11-07 14:01:31
+@LastEditTime: 2022-11-07 17:12:45
 '''
 
 from setuptools import setup, find_packages
 
 setup(
     name='vsource',
-    version='v1.1.5',
+    version='v2.0.0',
     description=(
         'Algorithm python library linked to vsource platform.'
     ),
@@ -39,8 +39,8 @@ setup(
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'vsource = vsource',
-            'vsc = vsource'
+            'vsource = vsource:run',
+            'vsc = vsource:run'
         ]
     }
 )

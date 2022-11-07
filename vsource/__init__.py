@@ -5,12 +5,10 @@
 @Author: Ecohnoch(xcy)
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-11-05 16:16:46
+@LastEditTime: 2022-11-07 17:11:27
 '''
 
-from . import login
-from . import configs
-
+from vsource.__main__ import run
 from vsource.login import login
 
 from vsource.algorithms.face_recognition import face_recognition
@@ -36,5 +34,5 @@ from vsource.scripts.algorithm_scripts.algorithms import parse_algorithm
 from vsource.scripts.enroll_service import enroll
 
 __version__ = 'v1.1.5'
-__author__  = 'DBIIR'
-__email__   = 'chuyuan@vsource.club'
+__author__ = 'DBIIR'
+__email__ = 'chuyuan@vsource.club'

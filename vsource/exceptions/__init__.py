@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 '''
-@Description: 
+@Description: 异常
 @Author: Kermit
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-11-05 20:48:24
+@LastEditTime: 2022-11-07 17:26:31
 '''
 
 class ConfigError(Exception):
