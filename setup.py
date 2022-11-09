@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-11-07 17:12:45
+@LastEditTime: 2022-11-07 18:44:08
 '''
 
 from setuptools import setup, find_packages
@@ -26,7 +26,8 @@ setup(
     platforms=["all"],
     url='https://github.com/VSOURCE-Platform/VSOURCE-Library',
     install_requires=[
-        'requests'
+        'requests',
+        'gradio'
     ],
     classifiers=[
         'Development Status :: 4 - Beta',

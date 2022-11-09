@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 17:49:11
 @LastEditors: Kermit
-@LastEditTime: 2022-11-09 19:29:10
+@LastEditTime: 2022-11-07 21:49:39
 '''
 
 
@@ -19,17 +19,17 @@ version = 'v1.0'  # 算法版本：仅能包含英文字母、数字和 . 符号
 username = 'kermit'  # 登录名
 password = 'ckmDBIIR'  # 密码
 
-service_filepath = 'main.py'  # 服务文件
+service_filepath = 'main2.py'  # 服务文件
 service_function = 'convert_text'  # 服务函数
 service_input = {
     'txt': {
-        'type': 'str',
+        'type': 'image_path',
         'describe': 'your text',
     }
 }  # 输入参数
 service_output = {
     'output_text': {
-        'type': 'str',
+        'type': 'image_path',
         'describe': 'converted text'
     }
 }  # 输出参数，输出需为字典

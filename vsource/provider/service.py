@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-11-07 16:51:17
+@LastEditTime: 2022-11-09 18:58:39
 '''
 
 from typing import Callable
@@ -23,6 +23,7 @@ import traceback
 import requests
 from vsource.login import login, login_instance
 from .config_loader import ConfigLoader, valid_param_type
+from .enroll import enroll, verify_config, is_component_normal
 from .stdio import GradioPrint
 import shutil
 import json
@@ -74,7 +75,7 @@ class ApiService:
 
         return path
 
-    def get_type_class(self, type: str) -> Callable:
+    def get_input_type_class(self, type: str, ) -> Callable:
         ''' 获取处理每种类型的 Callable 对象 '''
         if type not in valid_param_type:
             raise Exception(f'Param type \'{type}\' is not available.')
@@ -93,16 +94,35 @@ class ApiService:
         else:
             return str
 
+    def get_output_type_class(self, type: str, ) -> Callable:
+        ''' 获取处理每种类型的 Callable 对象 '''
+        if type not in valid_param_type:
+            raise Exception(f'Param type \'{type}\' is not available.')
+        elif type == 'str':
+            return str
+        elif type == 'int':
+            return int
+        elif type == 'float':
+            return float
+        elif type == 'image_path':
+            return self.write_file
+        elif type == 'video_path':
+            return self.write_file
+        elif type == 'voice_path':
+            return self.write_file
+        else:
+            return str
+
     def handle(self, input_info: dict) -> dict:
         ''' 处理请求 '''
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Api Service] Begin to handle.')
         params = {}
         for key, info in self.algorithm_config.service_input.items():
-            params[key] = self.get_type_class(info['type'])(input_info[key])
+            params[key] = self.get_input_type_class(info['type'])(input_info[key])
         out = self.algorithm_config.fn(**params)
         output_info = {}
         for key, info in self.algorithm_config.service_output.items():
-            output_info[key] = self.get_type_class(info['type'])(out[key])
+            output_info[key] = self.get_output_type_class(info['type'])(out[key])
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Api Service] Complete.')
         return output_info
 
@@ -119,7 +139,7 @@ class GradioService:
         if type not in valid_param_type:
             raise Exception(f'Param type \'{type}\' is not available.')
         elif type == 'str':
-            return gr.Textbox(placeholder=describe)
+            return gr.Textbox(placeholder=describe, label=describe)
         elif type == 'int':
             return gr.Number(precision=0, label=describe)
         elif type == 'float':
@@ -135,10 +155,13 @@ class GradioService:
 
     def launch(self, fn_lock: Lock, gradio_port_con: Connection) -> None:
         ''' 启动 Gradio 服务 '''
-        def fn(*args, **kwargs):
+        def fn(*args):
             try:
                 fn_lock.acquire()
-                out = self.algorithm_config.fn(*args, **kwargs)
+                kwargs = {}
+                for index, (key, _) in enumerate(self.algorithm_config.service_input.items()):
+                    kwargs[key] = args[index]
+                out = self.algorithm_config.fn(**kwargs)
                 fn_lock.release()
                 output_info = []
                 for key, _ in self.algorithm_config.service_output.items():
@@ -393,7 +416,7 @@ class Service:
                 if os.path.exists('tmp'):
                     shutil.rmtree('tmp')
             except Exception as e:
-                print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Service] Handle error: ', *e.args)
+                print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Service] Handle error:', *e.args)
                 traceback.print_exc()
                 time.sleep(config.call_interval)
                 continue
@@ -415,11 +438,52 @@ class Service:
             return False
         return True
 
+    def enroll(self):
+        try:
+            enroll(self.algorithm_config.name, self.algorithm_config.version, self.algorithm_config.service_input,
+                   self.algorithm_config.service_output, self.algorithm_config.config_file_content)
+            return True
+        except Exception as e:
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                  f'[{self.algorithm_info.upper_name}] Enroll failed:', *e.args)
+            return False
+
+    def verify_config(self):
+        try:
+            file = verify_config(self.algorithm_config.name, self.algorithm_config.version, self.algorithm_config.service_input,
+                                 self.algorithm_config.service_output)
+            if file:
+                dirpath = os.path.dirname(self.algorithm_config.config_path)
+                filepath = os.path.join(dirpath, 'vsource_config_origin.py')
+                with open(filepath, 'w') as f:
+                    f.write(file)
+                print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                      f'[{self.algorithm_info.upper_name}] Content of \'{self.algorithm_config.config_path}\' is not same as the config enrolled before. The original config file is regenerated at \'{filepath}\'. Please use the original file to start. Or if you have modified the algorithm, use a new \'version\' to start.')
+                return False
+            return True
+        except Exception as e:
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                  f'[{self.algorithm_info.upper_name}] Verify config failed:', *e.args)
+            return False
+
+    def is_component_normal(self):
+        while (True):
+            if is_component_normal(self.algorithm_config.name, self.algorithm_config.version):
+                break
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                  f'[{self.algorithm_info.upper_name}] Waiting for components started...')
+            time.sleep(5)
+
     async def start(self):
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
               f'[{self.algorithm_info.upper_name}] Initializing...')
         if not self.login():
             return
+        if not self.enroll():
+            return
+        if not self.verify_config():
+            return
+        self.is_component_normal()
 
         fn_lock = multiprocessing.Lock()  # 模型函数的锁
         gradio_port_con1, gradio_port_con2 = multiprocessing.Pipe()  # 传递 Gradio 端口的管道

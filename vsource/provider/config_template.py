@@ -26,7 +26,7 @@ service_input = {
         'type': 'str',
         'describe': 'your text',
     }
-}  # 输入参数，且需保证顺序正确
+}  # 输入参数
 service_output = {
     'output_text': {
         'type': 'str',

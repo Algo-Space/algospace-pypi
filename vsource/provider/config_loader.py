@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 20:19:06
 @LastEditors: Kermit
-@LastEditTime: 2022-11-07 16:27:54
+@LastEditTime: 2022-11-09 18:40:26
 '''
 
 import os
@@ -19,12 +19,16 @@ valid_param_type = ['str', 'int', 'float', 'image_path', 'video_path', 'voice_pa
 
 class ConfigLoader:
     def __init__(self, config_path: str) -> None:
+        self.config_path = config_path
+        # 导入配置
         config_dirpath = os.path.split(config_path)[0]
         config_filename = os.path.split(config_path)[1]
         config_filename_noext = os.path.splitext(config_filename)[0]
         sys.path.insert(0, config_dirpath)
         config = __import__(config_filename_noext)
         sys.path.pop(0)
+        with open(config_path, 'r') as f:
+            self.config_file_content = f.read()
 
         self.name: str = getattr(config, 'name', '')
         self.version: str = getattr(config, 'version', '')

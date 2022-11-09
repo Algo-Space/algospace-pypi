@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-24 14:45:40
 @LastEditors: Kermit
-@LastEditTime: 2022-11-07 16:09:32
+@LastEditTime: 2022-11-09 18:09:05
 '''
 
 import os
@@ -13,6 +13,11 @@ import os
 
 call_interval = 1
 sleep_interval = 7
+
+
+enroll_url = 'https://vsource.club/core/algo/enroll'
+verify_config_url = 'https://vsource.club/core/algo/verify'
+is_component_normal_url = 'https://vsource.club/core/algo/is_component_normal'
 
 
 class Algoinfo:
