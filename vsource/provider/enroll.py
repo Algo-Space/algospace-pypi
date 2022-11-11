@@ -32,7 +32,7 @@ def enroll_from_config(config_path: str):
               f'[Vsource] Enroll successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}')
     except Exception as e:
         traceback.print_exc()
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Vsource] Enroll error:', *e.args)
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Vsource] Enroll error:', str(e))
 
 
 def enroll(name: str, version: str, input: dict, output: dict, config_file: str):

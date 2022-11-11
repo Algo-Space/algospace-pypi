@@ -26,4 +26,4 @@ def generate_config():
         print('已在当前目录下生成 \'vsource-config.py\' 文件，填写算法信息后，即可通过 \'vsource start\' 命令一键启动。')
     except Exception as e:
         traceback.print_exc()
-        print('[Vsource] Init error:', *e.args)
+        print('[Vsource] Init error:', str(e))

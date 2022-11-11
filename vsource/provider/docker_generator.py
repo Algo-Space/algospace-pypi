@@ -30,7 +30,7 @@ def generate_docker_config(config_path: str):
         print(f'[Vsource] Generate successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}')
     except Exception as e:
         traceback.print_exc()
-        print('[Vsource] Generate error:', *e.args)
+        print('[Vsource] Generate error:', str(e))
 
 
 def gen_requirements_txt(requirements: list[str]):

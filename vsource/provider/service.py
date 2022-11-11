@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-11-11 20:41:07
+@LastEditTime: 2022-11-11 20:52:23
 '''
 
 from typing import Callable
@@ -430,7 +430,7 @@ class Service:
                     shutil.rmtree('tmp')
             except Exception as e:
                 traceback.print_exc()
-                print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Service] Handle error:', *e.args)
+                print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Service] Handle error:', str(e))
                 time.sleep(config.call_interval)
                 continue
 
@@ -458,7 +458,7 @@ class Service:
             return True
         except Exception as e:
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  f'[{self.algorithm_info.upper_name}] Enroll failed:', *e.args)
+                  f'[{self.algorithm_info.upper_name}] Enroll failed:', str(e))
             return False
 
     def verify_config(self):
@@ -476,7 +476,7 @@ class Service:
             return True
         except Exception as e:
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  f'[{self.algorithm_info.upper_name}] Verify config failed:', *e.args)
+                  f'[{self.algorithm_info.upper_name}] Verify config failed:', str(e))
             return False
 
     def is_component_normal(self):

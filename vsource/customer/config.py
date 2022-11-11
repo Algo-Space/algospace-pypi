@@ -5,10 +5,8 @@
 @Author: Kermit
 @Date: 2022-10-24 14:45:40
 @LastEditors: Kermit
-@LastEditTime: 2022-11-11 19:49:10
+@LastEditTime: 2022-11-11 20:50:33
 '''
-
-import os
 
 
 interval = 0.3
