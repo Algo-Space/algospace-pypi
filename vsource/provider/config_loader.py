@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 20:19:06
 @LastEditors: Kermit
-@LastEditTime: 2022-11-09 18:40:26
+@LastEditTime: 2022-11-11 15:12:58
 '''
 
 import os
@@ -39,9 +39,14 @@ class ConfigLoader:
         self.service_input: dict = getattr(config, 'service_input')
         self.service_output: dict = getattr(config, 'service_output')
 
+        self.chinese_name: str = getattr(config, 'chinese_name', '')
         self.description: str = getattr(config, 'description', '')
         self.gradio_server_host = '127.0.0.1'
         self.gradio_server_port = 7860
+
+        self.requirements: list[str] = getattr(config, 'requirements', [])
+        self.pre_command: list[str] = getattr(config, 'pre_command', [])
+        self.base_image: str = getattr(config, 'base_image', 'python:3.9')
 
         self._verify()
 
@@ -117,8 +122,24 @@ class ConfigLoader:
                     f'ConfigError: type of \'{str(key)}\' in \'service_output\' is not in {str(valid_param_type)}.')
             info['describe'] = str(info.get('describe', ''))
 
+        if type(self.chinese_name) != str:
+            raise ConfigError('ConfigError: \'chinese_name\' is not str.')
         if type(self.description) != str:
             raise ConfigError('ConfigError: \'description\' is not str.')
+
+        if type(self.requirements) != list:
+            raise ConfigError('ConfigError: \'requirements\' is not list.')
+        for requirements_item in self.requirements:
+            if type(requirements_item) != str:
+                raise ConfigError('ConfigError: Item in \'requirements\' is not str.')
+
+        if type(self.pre_command) != list:
+            raise ConfigError('ConfigError: \'pre_command\' is not list.')
+        for pre_command_item in self.pre_command:
+            if type(pre_command_item) != str:
+                raise ConfigError('ConfigError: Item in \'pre_command\' is not str.')
+        if type(self.base_image) != str:
+            raise ConfigError('ConfigError: \'base_image\' is not str.')
 
     @property
     def fn(self) -> Callable:

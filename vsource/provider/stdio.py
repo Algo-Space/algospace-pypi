@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-07 14:56:36
 @LastEditors: Kermit
-@LastEditTime: 2022-11-07 16:47:12
+@LastEditTime: 2022-11-10 17:47:39
 '''
 
 import sys
@@ -32,7 +32,7 @@ class RedirectPrint:
     def __enter__(self):
         self.close()
 
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         self.open()
 
 
@@ -53,7 +53,7 @@ class HiddenPrint:
     def __enter__(self):
         self.close()
 
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         self.open()
 
 

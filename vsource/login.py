@@ -5,7 +5,7 @@
 @Author: Ecohnoch(xcy)
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-11-06 00:39:35
+@LastEditTime: 2022-11-11 13:12:29
 '''
 
 import json
@@ -46,7 +46,6 @@ class LoginInstance(metaclass=Singleton):
 
     def get_cookie(self) -> str:
         if not self.ever_logined():
-            print('123' ,self.username, self.password)
             raise LoginError('LoginError: No login before.')
         if self.is_outdated():
             self.login()

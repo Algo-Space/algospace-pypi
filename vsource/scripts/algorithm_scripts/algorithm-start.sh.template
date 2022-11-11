@@ -1,2 +1,0 @@
-docker build -t vsource/{}:{} -f vsource_dockerfile ./
-docker-compose -f vsource_deploy_compose.yaml up -d

@@ -1,8 +1,0 @@
-pip install requests
-
-export LOGIN_USERNAME={LOGIN_USERNAME}
-export LOGIN_PASSWORD={LOGIN_PASSWORD}
-export ALGORITHM_NAME={ALGORITHM_NAME}
-export ALGORITHM_VERSION={ALGORITHM_VERSION}
-
-nohup python -u vsource_service.py > vsource.log 2>&1 &

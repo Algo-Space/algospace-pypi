@@ -5,12 +5,34 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-11-09 18:54:30
+@LastEditTime: 2022-11-11 13:16:34
 '''
 
 from .config import enroll_url, verify_config_url, is_component_normal_url
 import requests
-from vsource.login import login_instance
+import time
+import traceback
+from vsource.login import login, login_instance
+from .config_loader import ConfigLoader
+
+
+def enroll_from_config(config_path: str):
+    ''' 从配置文件注册 '''
+    try:
+        algorithm_config = ConfigLoader(config_path)
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Vsource] Login...')
+        if not login(algorithm_config.username, algorithm_config.password):
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                  '[Vsource] Login failed. Please check your password.')
+            return
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Vsource] Enroll processing...')
+        enroll(algorithm_config.name, algorithm_config.version, algorithm_config.service_input,
+               algorithm_config.service_output, algorithm_config.config_file_content)
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+              f'[Vsource] Enroll successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}')
+    except Exception as e:
+        traceback.print_exc()
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Vsource] Enroll error:', *e.args)
 
 
 def enroll(name: str, version: str, input: dict, output: dict, config_file: str):

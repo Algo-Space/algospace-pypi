@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-11-07 17:40:35
+@LastEditTime: 2022-11-11 14:27:16
 '''
 
 from argparse import ArgumentParser
@@ -29,10 +29,13 @@ def run():
 
     # start 命令参数
     start_parser.add_argument('-c', '--config', dest=ArgNamespace.config_path, metavar='<path>', type=str, required=False,
-                              default='vsource_config.py', help='vsource_config.py 配置文件路径')  # ArgNamespace.config_path
+                              default='vsource-config.py', help='vsource-config.py 配置文件路径')  # ArgNamespace.config_path
+    # generate 命令参数
+    generate_parser.add_argument('-c', '--config', dest=ArgNamespace.config_path, metavar='<path>', type=str, required=False,
+                                 default='vsource-config.py', help='vsource-config.py 配置文件路径')  # ArgNamespace.config_path
     # enroll 命令参数
     enroll_parser.add_argument('-c', '--config', dest=ArgNamespace.config_path, metavar='<path>', type=str, required=False,
-                               default='vsource_config.py', help='vsource_config.py 配置文件路径')  # ArgNamespace.config_path
+                               default='vsource-config.py', help='vsource-config.py 配置文件路径')  # ArgNamespace.config_path
     enroll_parser.add_argument('-r', '--remote', dest=ArgNamespace.enroll_remote, required=False,
                                action='store_true', default=False, help='远程部署')  # ArgNamespace.config_path
 
@@ -48,9 +51,14 @@ def run():
         from vsource.provider.service import run_service
         run_service(args.config_path)
     elif args.command == 'generate':
-        pass
+        from vsource.provider.docker_generator import generate_docker_config
+        generate_docker_config(args.config_path)
     elif args.command == 'enroll':
-        pass
+        from vsource.provider.enroll import enroll_from_config
+        if not args.enroll_remote:
+            enroll_from_config(args.config_path)
+        else:
+            print('Enrolling remotely will come soon.')
     else:
         raise Exception(f'CommandError: \'{args.command}\' is an invalid command')
 

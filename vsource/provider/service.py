@@ -454,7 +454,7 @@ class Service:
                                  self.algorithm_config.service_output)
             if file:
                 dirpath = os.path.dirname(self.algorithm_config.config_path)
-                filepath = os.path.join(dirpath, 'vsource_config_origin.py')
+                filepath = os.path.join(dirpath, 'vsource-config-origin.py')
                 with open(filepath, 'w') as f:
                     f.write(file)
                 print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
