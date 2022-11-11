@@ -5,7 +5,7 @@
 @Author: Ecohnoch(xcy)
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-11-11 13:12:29
+@LastEditTime: 2022-11-11 15:33:35
 '''
 
 import json
@@ -13,7 +13,7 @@ import time
 from typing import Optional
 import requests
 import traceback
-import vsource.configs as configs
+import vsource.config as config
 from vsource.exceptions import LoginError
 
 
@@ -58,7 +58,7 @@ class LoginInstance(metaclass=Singleton):
         self.username = username or self.username
         self.password = password or self.password
         try:
-            login_url = configs.login_url
+            login_url = config.login_url
             login_data = {
                 'username': self.username,
                 'password': self.password

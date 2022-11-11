@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-11-07 17:26:31
+@LastEditTime: 2022-11-11 18:50:46
 '''
 
 class ConfigError(Exception):
@@ -18,6 +18,11 @@ class FileExtNotValid(Exception):
 
 
 class TimeOutException(Exception):
+    def __init__(self, err_msg):
+        Exception.__init__(self, err_msg)
+
+
+class CallException(Exception):
     def __init__(self, err_msg):
         Exception.__init__(self, err_msg)
 

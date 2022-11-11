@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-11-09 18:58:39
+@LastEditTime: 2022-11-11 20:41:07
 '''
 
 from typing import Callable
@@ -29,6 +29,7 @@ import shutil
 import json
 import time
 import os
+import re
 
 
 class ApiService:
@@ -38,7 +39,7 @@ class ApiService:
         self.algorithm_config = algorithm_config
         self.algorithm_info = algorithm_info
 
-    def read_file(self, path: str):
+    def read_file(self, path: str) -> str:
         ''' 将 storage 返回的 path 转换为本地 path '''
         file_url = self.algorithm_info.storage_file_url + '/' + path
         dir_path = os.path.dirname(os.path.join('tmp', path))
@@ -57,7 +58,7 @@ class ApiService:
 
         return local_path
 
-    def write_file(self, local_path: str):
+    def write_file(self, local_path: str) -> str:
         ''' 将本地 path 转换为 storage 返回的 path '''
         filename = os.path.split(local_path)[-1]
         with open(local_path, 'rb') as f:
@@ -125,6 +126,16 @@ class ApiService:
             output_info[key] = self.get_output_type_class(info['type'])(out[key])
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Api Service] Complete.')
         return output_info
+
+    def get_example(self):
+        is_pure_name = re.match('^[a-zA-Z0-9_]*$', self.algorithm_config.name) is not None   # type: ignore
+        if is_pure_name:
+            example = f'vsource.{self.algorithm_config.name}'
+        else:
+            example = f'vsource.fn(\'{self.algorithm_config.name}\')'
+        example += f'(' + ", ".join([f"{key}: {input_dict['type']}" for key,
+                                     input_dict in self.algorithm_config.service_input.items()])+')'
+        return example
 
 
 class GradioService:
@@ -329,7 +340,9 @@ class Service:
         self.algorithm_config.gradio_server_port = gradio_port
 
         # 开始处理
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}] [Service] Start handling... The gradio url is: {self.algorithm_info.gradio_page}')
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}] [Service] Call through gradio: {self.algorithm_info.gradio_page}')
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}] [Service] Call through pypi: \'{self.api_service.get_example()}\'')
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}] [Service] Start handling...')
         print('')
         while True:
             try:
@@ -405,7 +418,7 @@ class Service:
                         'status': 'error',
                         'owner': req_info['owner'],
                         'create_date': req_info['create_date'],
-                        'result': {}
+                        'result': {'err_msg': str(e)}
                     }
                     return_error_param = {'res_info': res_info}
                     requests.post(self.algorithm_info.return_err_url, json=return_error_param,
@@ -416,8 +429,8 @@ class Service:
                 if os.path.exists('tmp'):
                     shutil.rmtree('tmp')
             except Exception as e:
-                print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Service] Handle error:', *e.args)
                 traceback.print_exc()
+                print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Service] Handle error:', *e.args)
                 time.sleep(config.call_interval)
                 continue
 
