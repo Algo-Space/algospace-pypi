@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-11-11 20:52:23
+@LastEditTime: 2022-11-11 21:13:34
 '''
 
 from typing import Callable
@@ -350,6 +350,11 @@ class Service:
                 ask_for_data_param = {'from_ip': ''}
                 ask_for_data_resp = requests.get(self.algorithm_info.ask_data_url,
                                                  params=ask_for_data_param, headers=login_instance.get_header())
+                if ask_for_data_resp.status_code != 200 and ask_for_data_resp.status_code != 201:
+                    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                          '[Service] Ask data error:', ask_for_data_resp.status_code,
+                          ask_for_data_resp.content.decode())
+                    continue
                 ask_for_data_dict = ask_for_data_resp.json()
                 if ask_for_data_dict['status'] == 201:
                     # 没有新的请求信息

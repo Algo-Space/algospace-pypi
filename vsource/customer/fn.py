@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-11 15:47:20
 @LastEditors: Kermit
-@LastEditTime: 2022-11-11 19:53:40
+@LastEditTime: 2022-11-11 21:11:15
 '''
 
 from typing import Optional, Callable
@@ -117,7 +117,9 @@ class AlgoFunction:
 
         response = requests.post(info['submit_url'], data=kwargs,
                                  headers=login_instance.get_header(), timeout=self.timeout)
-        if response.status_code != 200 and response.status_code != 201 and response.json()['status'] != 200:
+        if response.status_code != 200 and response.status_code != 201:
+            raise Exception(response.status_code, response.content.decode())
+        if response.json()['status'] != 200:
             raise CallException(response.json().get('err_msg', 'Call algorithm function error.'))
         req_id = response.json()['data']['id']
 
