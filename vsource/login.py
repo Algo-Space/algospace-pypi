@@ -5,7 +5,7 @@
 @Author: Ecohnoch(xcy)
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-11-11 15:33:35
+@LastEditTime: 2022-11-13 21:56:16
 '''
 
 import json
@@ -64,11 +64,12 @@ class LoginInstance(metaclass=Singleton):
                 'password': self.password
             }
             response = requests.post(login_url, data=login_data)
-            response_dict = json.loads(response.content)
-            if response_dict['status'] == 200:
-                self.set_cookie(response.headers['Set-Cookie'], int(time.time()))
-                return True
-            return False
+            if response.status_code != 200 and response.status_code != 201:
+                raise Exception(response.status_code, response.content.decode())
+            if response.json()['status'] != 200:
+                raise Exception(response.json().get('err_msg', 'Login error.'))
+            self.set_cookie(response.headers['Set-Cookie'], int(time.time()))
+            return True
         except Exception as e:
             traceback.print_exc()
             return False
