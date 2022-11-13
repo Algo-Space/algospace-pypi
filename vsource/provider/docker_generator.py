@@ -20,17 +20,17 @@ def generate_docker_config(config_path: str):
         algorithm_info = Algoinfo(algorithm_config.name, algorithm_config.version)
 
         gen_requirements_txt(algorithm_config.requirements)
-        print('[Vsource] [Step 1/4] Requirements has been successfully generated!')
+        print('[VSource] [Step 1/4] Requirements has been successfully generated!')
         gen_dockerfile(algorithm_config.pre_command, algorithm_config.base_image, config_path)
-        print('[Vsource] [Step 2/4] Dockerfile has been successfully generated!')
+        print('[VSource] [Step 2/4] Dockerfile has been successfully generated!')
         gen_docker_compose(algorithm_info.name, algorithm_info.version, algorithm_info.lower_name)
-        print('[Vsource] [Step 3/4] Docker compose file has been successfully generated!')
+        print('[VSource] [Step 3/4] Docker compose file has been successfully generated!')
         gen_control_script(algorithm_info.name, algorithm_info.version)
-        print('[Vsource] [Step 4/4] Docker control file has been successfully generated!')
-        print(f'[Vsource] Generate successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}')
+        print('[VSource] [Step 4/4] Docker control file has been successfully generated!')
+        print(f'[VSource] Generate successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}')
     except Exception as e:
         traceback.print_exc()
-        print('[Vsource] Generate error:', str(e))
+        print('[VSource] Generate error:', str(e))
 
 
 def gen_requirements_txt(requirements: list[str]):

@@ -1,4 +1,4 @@
-''' Vsource 算法服务配置文件 '''
+''' VSource 算法服务配置文件 '''
 
 ############################
 # 必填选项:
@@ -10,11 +10,11 @@
 #   - service_function:     算法服务函数名
 #   - service_input:        算法服务函数输入参数，字典类型
 #       - .{arg}:           参数名
-#       - .{arg}.type:      参数类型，包含: str (字符串), int (定点数), float (浮点数), image_path (图片本地路径), video_path (图片本地路径), voice_path (图片本地路径)
+#       - .{arg}.type:      参数类型，包含: str (字符串), int (定点数), float (浮点数), image_path (图片本地路径), video_path (视频本地路径), voice_path (音频本地路径)
 #       - .{arg}.describe:  参数简要描述
 #   - service_output:       算法服务函数输出参数，字典类型，函数需以对应字典类型输出
 #       - .{arg}:           参数名
-#       - .{arg}.type:      参数类型，包含: str (字符串), int (定点数), float (浮点数), image_path (图片本地路径), video_path (图片本地路径), voice_path (图片本地路径)
+#       - .{arg}.type:      参数类型，包含: str (字符串), int (定点数), float (浮点数), image_path (图片本地路径), video_path (视频本地路径), voice_path (音频本地路径)
 #       - .{arg}.describe:  参数简要描述
 #
 # 参数配置填写示例:

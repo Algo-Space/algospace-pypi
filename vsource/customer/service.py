@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-11 15:27:48
 @LastEditors: Kermit
-@LastEditTime: 2022-11-11 19:56:33
+@LastEditTime: 2022-11-11 22:04:55
 '''
 
 
@@ -33,6 +33,8 @@ def fn(algorithm_name: str, algorithm_version: Optional[str] = None, timeout: in
         fn = AlgoFunction(algorithm_name, algorithm_version, timeout)
         fn_version = {algorithm_version: fn}
         _fn_storage[algorithm_name] = fn_version
+    else:
+        fn.timeout = timeout
     return fn
 
 

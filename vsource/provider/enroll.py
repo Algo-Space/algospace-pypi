@@ -20,19 +20,19 @@ def enroll_from_config(config_path: str):
     ''' 从配置文件注册 '''
     try:
         algorithm_config = ConfigLoader(config_path)
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Vsource] Login...')
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[VSource] Login...')
         if not login(algorithm_config.username, algorithm_config.password):
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[Vsource] Login failed. Please check your password.')
+                  '[VSource] Login failed. Please check your password.')
             return
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Vsource] Enroll processing...')
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[VSource] Enroll processing...')
         enroll(algorithm_config.name, algorithm_config.version, algorithm_config.service_input,
                algorithm_config.service_output, algorithm_config.config_file_content)
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-              f'[Vsource] Enroll successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}')
+              f'[VSource] Enroll successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}')
     except Exception as e:
         traceback.print_exc()
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Vsource] Enroll error:', str(e))
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[VSource] Enroll error:', str(e))
 
 
 def enroll(name: str, version: str, input: dict, output: dict, config_file: str):

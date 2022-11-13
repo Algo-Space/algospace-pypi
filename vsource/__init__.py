@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 '''
-@Description: Vsource 包
+@Description: VSource 包
 @Author: DBIIR
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit

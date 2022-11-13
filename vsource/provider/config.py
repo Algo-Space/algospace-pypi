@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-24 14:45:40
 @LastEditors: Kermit
-@LastEditTime: 2022-11-09 18:09:05
+@LastEditTime: 2022-11-13 21:39:09
 '''
 
 import os
@@ -36,6 +36,10 @@ class Algoinfo:
     @property
     def upper_name(self):
         return self.full_name.replace('-', '_').replace('.',  '_').upper()
+
+    @property
+    def heartbeat_url(self):
+        return 'https://vsource.club/core/heartbeat/send'
 
     @property
     def ask_data_url(self):

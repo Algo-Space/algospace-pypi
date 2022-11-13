@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-11-11 21:13:34
+@LastEditTime: 2022-11-13 21:37:01
 '''
 
 from typing import Callable
@@ -347,9 +347,7 @@ class Service:
         while True:
             try:
                 # 轮询一条请求消息
-                ask_for_data_param = {'from_ip': ''}
-                ask_for_data_resp = requests.get(self.algorithm_info.ask_data_url,
-                                                 params=ask_for_data_param, headers=login_instance.get_header())
+                ask_for_data_resp = requests.get(self.algorithm_info.ask_data_url, headers=login_instance.get_header())
                 if ask_for_data_resp.status_code != 200 and ask_for_data_resp.status_code != 201:
                     print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
                           '[Service] Ask data error:', ask_for_data_resp.status_code,
@@ -492,6 +490,13 @@ class Service:
                   f'[{self.algorithm_info.upper_name}] Waiting for components started...')
             time.sleep(5)
 
+    def send_heartbeat(self):
+        body = {
+            'algorithm_name': self.algorithm_info.name,
+            'algorithm_version': self.algorithm_info.version
+        }
+        requests.post(self.algorithm_info.heartbeat_url, data=body, headers=login_instance.get_header())
+
     async def start(self):
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
               f'[{self.algorithm_info.upper_name}] Initializing...')
@@ -530,19 +535,25 @@ class Service:
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
               f'[{self.algorithm_info.upper_name}] Waiting for service launched...')
 
+        times = 0
         while True:
+            if times % 10 == 0:
+                # 每 10 秒发送心跳
+                self.send_heartbeat()
+                times = 0
             await asyncio.sleep(1)
             if not check_process_alive(service_process):
                 service_process = create_service_process()
             if not check_process_alive(gradio_process):
                 gradio_process = create_service_process()
+            times += 1
 
 
 def run_service(config_path: str) -> None:
     try:
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Vsource] Init.')
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[VSource] Init.')
         service = Service(config_path)
         asyncio.run(service.start())
     except:
         traceback.print_exc()
-    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Vsource] Exit.')
+    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[VSource] Exit.')
