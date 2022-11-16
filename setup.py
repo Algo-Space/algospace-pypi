@@ -5,14 +5,14 @@
 @Author: Kermit
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-11-16 22:19:02
+@LastEditTime: 2022-11-16 23:22:03
 '''
 
 from setuptools import setup, find_packages
 
 setup(
     name='vsource',
-    version='v2.0.2',
+    version='v2.0.3',
     description=(
         'Algorithm python library linked to vsource platform.'
     ),

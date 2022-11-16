@@ -1,11 +1,5 @@
-#!/usr/bin/env python
-# -*- coding:utf-8 -*-
 '''
-@Description: VSource 包
-@Author: DBIIR
-@Date: 2022-10-06 12:30:47
-@LastEditors: Kermit
-@LastEditTime: 2022-11-11 19:57:03
+Algorithm python library linked to vsource platform.
 '''
 
 __version__ = 'v2.0.0'

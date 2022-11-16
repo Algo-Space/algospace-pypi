@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-11-16 23:20:18
+@LastEditTime: 2022-11-16 23:34:16
 '''
 
 from typing import Callable
@@ -42,7 +42,8 @@ class ApiService:
     def read_file(self, path: str) -> str:
         ''' 将 storage 返回的 path 转换为本地 path '''
         file_url = self.algorithm_info.storage_file_url + '/' + path
-        dir_path = os.path.dirname(os.path.join(os.getcwd(), 'tmp', path))
+        tmp_path = os.path.join(os.getcwd(), 'tmp')
+        dir_path = os.path.dirname(os.path.join(tmp_path, path))
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
 
@@ -52,9 +53,9 @@ class ApiService:
             file_request.add_header(key, value)
         file_bytes = urllib.request.urlopen(file_request).read()
 
-        with open(os.path.join('tmp', path), 'wb') as f:
+        with open(os.path.join(tmp_path, path), 'wb') as f:
             f.write(file_bytes)
-        local_path = os.path.join('tmp', path)
+        local_path = os.path.join(tmp_path, path)
 
         return local_path
 
