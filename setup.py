@@ -5,30 +5,31 @@
 @Author: Kermit
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-11-07 18:44:08
+@LastEditTime: 2022-11-16 22:19:02
 '''
 
 from setuptools import setup, find_packages
 
 setup(
     name='vsource',
-    version='v2.0.0',
+    version='v2.0.2',
     description=(
         'Algorithm python library linked to vsource platform.'
     ),
     long_description=open('README.rst', encoding='utf8').read(),
-    author='Ecohnoch',
+    author='DBIIR',
     author_email='chuyuan@vsource.club',
-    maintainer='Ecohnoch',
+    maintainer='DBIIR',
     maintainer_email='chuyuan@vsource.club',
     license='BSD License',
-    packages=find_packages(),
+    packages=find_packages(where='.', include=('vsource',)),
     platforms=["all"],
     url='https://github.com/VSOURCE-Platform/VSOURCE-Library',
     install_requires=[
         'requests',
         'gradio'
     ],
+    python_requires='>=3.5',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Operating System :: OS Independent',
