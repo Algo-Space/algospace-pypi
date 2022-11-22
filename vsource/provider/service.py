@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-11-16 23:34:16
+@LastEditTime: 2022-11-22 16:26:56
 '''
 
 from typing import Callable
@@ -24,11 +24,12 @@ import requests
 from vsource.login import login, login_instance
 from .config_loader import ConfigLoader, valid_param_type
 from .enroll import enroll, verify_config, is_component_normal
-from .stdio import GradioPrint
+from .stdio import GradioPrint, QueueStdIO, QueueStdIOExec
 import shutil
 import json
 import time
 import os
+import sys
 import re
 
 
@@ -438,7 +439,9 @@ class Service:
                 time.sleep(config.call_interval)
                 continue
 
-    def launch(self, type: str, fn_lock: Lock, gradio_port_con: Connection):
+    def launch(self, stdout_queueu: multiprocessing.Queue, stderr_queueu: multiprocessing.Queue, type: str, fn_lock: Lock, gradio_port_con: Connection):
+        sys.stdout = QueueStdIO(sys.stdout, stdout_queueu)
+        sys.stderr = QueueStdIO(sys.stderr, stderr_queueu)
         if not self.login():
             exit(1)
         if type == 'SERVICE':
@@ -499,6 +502,7 @@ class Service:
         requests.post(self.algorithm_info.heartbeat_url, data=body, headers=login_instance.get_header())
 
     async def start(self):
+        # 初始化状态
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
               f'[{self.algorithm_info.upper_name}] Initializing...')
         if not self.login():
@@ -509,18 +513,21 @@ class Service:
             return
         self.is_component_normal()
 
+        # 开启子进程
+        stdout_queueu = multiprocessing.Queue(maxsize=0)  # 子进程通过队列将标准输出重定向到父进程
+        stderr_queueu = multiprocessing.Queue(maxsize=0)  # 子进程通过队列将标准输出重定向到父进程
         fn_lock = multiprocessing.Lock()  # 模型函数的锁
         gradio_port_con1, gradio_port_con2 = multiprocessing.Pipe()  # 传递 Gradio 端口的管道
 
         def create_service_process():
             service_process = multiprocessing.Process(target=self.launch, args=(
-                'SERVICE', fn_lock, gradio_port_con2), daemon=True)
+                stdout_queueu, stderr_queueu, 'SERVICE', fn_lock, gradio_port_con2), daemon=True)
             service_process.start()
             return service_process
 
         def create_gradio_process():
             gradio_process = multiprocessing.Process(target=self.launch, args=(
-                'GRADIO', fn_lock, gradio_port_con1), daemon=True)
+                stdout_queueu, stderr_queueu, 'GRADIO', fn_lock, gradio_port_con1), daemon=True)
             gradio_process.start()
             return gradio_process
 
@@ -536,18 +543,39 @@ class Service:
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
               f'[{self.algorithm_info.upper_name}] Waiting for service launched...')
 
-        times = 0
-        while True:
-            if times % 10 == 0:
-                # 每 10 秒发送心跳
-                self.send_heartbeat()
-                times = 0
-            await asyncio.sleep(1)
-            if not check_process_alive(service_process):
-                service_process = create_service_process()
-            if not check_process_alive(gradio_process):
-                gradio_process = create_service_process()
-            times += 1
+        # 开启事件循环
+        async def heartbeat_task():
+            times = 0
+            while True:
+                if times % 10 == 0:
+                    # 每 10 秒发送心跳
+                    await asyncio.get_running_loop().run_in_executor(None, self.send_heartbeat)
+                    times = 0
+                await asyncio.sleep(1)
+                times += 1
+
+        async def alive_task():
+            nonlocal service_process
+            nonlocal gradio_process
+            while True:
+                await asyncio.sleep(1)
+                if not check_process_alive(service_process):
+                    service_process = create_service_process()
+                if not check_process_alive(gradio_process):
+                    gradio_process = create_service_process()
+
+        async def subprocess_stdout_task():
+            stdout_exec = QueueStdIOExec(sys.stdout, stdout_queueu).exec
+            while True:
+                await asyncio.get_running_loop().run_in_executor(None, stdout_exec)
+
+        async def subprocess_stderr_task():
+            stderr_exec = QueueStdIOExec(sys.stderr, stderr_queueu).exec
+            while True:
+                await asyncio.get_running_loop().run_in_executor(None, stderr_exec)
+
+        tasks = [heartbeat_task(), alive_task(), subprocess_stdout_task(), subprocess_stderr_task()]
+        await asyncio.wait(tasks)
 
 
 def run_service(config_path: str) -> None:

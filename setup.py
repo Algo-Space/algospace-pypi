@@ -5,14 +5,14 @@
 @Author: Kermit
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-11-16 23:22:03
+@LastEditTime: 2022-11-16 23:57:52
 '''
 
 from setuptools import setup, find_packages
 
 setup(
     name='vsource',
-    version='v2.0.3',
+    version='v2.0.5',
     description=(
         'Algorithm python library linked to vsource platform.'
     ),
@@ -29,7 +29,7 @@ setup(
         'requests',
         'gradio'
     ],
-    python_requires='>=3.5',
+    python_requires='>=3.7',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Operating System :: OS Independent',
