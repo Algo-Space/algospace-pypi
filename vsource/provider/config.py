@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-24 14:45:40
 @LastEditors: Kermit
-@LastEditTime: 2022-11-13 21:39:09
+@LastEditTime: 2022-11-28 13:09:08
 '''
 
 import os
@@ -15,9 +15,9 @@ call_interval = 1
 sleep_interval = 7
 
 
-enroll_url = 'https://vsource.club/core/algo/enroll'
-verify_config_url = 'https://vsource.club/core/algo/verify'
-is_component_normal_url = 'https://vsource.club/core/algo/is_component_normal'
+enroll_url = 'https://vsource.club/core/algo/pypi/enroll'
+verify_config_url = 'https://vsource.club/core/algo/pypi/verify'
+is_component_normal_url = 'https://vsource.club/core/algo/pypi/is_component_normal'
 
 
 class Algoinfo:

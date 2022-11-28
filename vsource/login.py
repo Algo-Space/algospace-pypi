@@ -5,7 +5,7 @@
 @Author: Ecohnoch(xcy)
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-11-13 21:56:16
+@LastEditTime: 2022-11-27 19:40:06
 '''
 
 import json
@@ -60,7 +60,7 @@ class LoginInstance(metaclass=Singleton):
         try:
             login_url = config.login_url
             login_data = {
-                'username': self.username,
+                'user_id': self.username,
                 'password': self.password
             }
             response = requests.post(login_url, data=login_data)

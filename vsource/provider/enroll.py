@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-11-11 21:12:14
+@LastEditTime: 2022-11-28 12:33:49
 '''
 
 from .config import enroll_url, verify_config_url, is_component_normal_url
@@ -26,8 +26,8 @@ def enroll_from_config(config_path: str):
                   '[VSource] Login failed. Please check your password.')
             return
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[VSource] Enroll processing...')
-        enroll(algorithm_config.name, algorithm_config.version, algorithm_config.service_input,
-               algorithm_config.service_output, algorithm_config.config_file_content)
+        enroll(algorithm_config.name, algorithm_config.version, algorithm_config.service_input, algorithm_config.service_output,
+               algorithm_config.description, algorithm_config.scope, algorithm_config.chinese_name, algorithm_config.document, algorithm_config.config_file_content)
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
               f'[VSource] Enroll successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}')
     except Exception as e:
@@ -35,13 +35,17 @@ def enroll_from_config(config_path: str):
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[VSource] Enroll error:', str(e))
 
 
-def enroll(name: str, version: str, input: dict, output: dict, config_file: str):
+def enroll(name: str, version: str, input: dict, output: dict, description: str, scope: str, chinese_name: str, document: str, config_file: str):
     ''' 注册算法 '''
     enroll_data = {
         'name': name,
         'version': version,
         'input_param': [{'key': key, 'type': val['type'], 'describe': val['describe']} for key, val in input.items()],
         'output_param': [{'key': key, 'type': val['type'], 'describe': val['describe']} for key, val in output.items()],
+        'description': description,
+        'scope': scope,
+        'chinese_name': chinese_name,
+        'document': document,
         'config_file': config_file
     }
     headers = login_instance.get_header()

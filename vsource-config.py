@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 17:49:11
 @LastEditors: Kermit
-@LastEditTime: 2022-11-09 19:29:10
+@LastEditTime: 2022-11-28 17:47:03
 '''
 
 
@@ -13,10 +13,10 @@
 # 必填选项 #
 ###########
 
-name = 'kermit_test'  # 算法名：仅能包含英文字母、数字和 _ - @ 符号
+name = 'ckm_test'  # 算法名：仅能包含英文字母、数字和 _ - @ 符号
 version = 'v1.0'  # 算法版本：仅能包含英文字母、数字和 . 符号
 
-username = 'kermit'  # 登录名
+username = 'ckm'  # 登录名
 password = 'ckmDBIIR'  # 密码
 
 service_filepath = 'main.py'  # 服务文件

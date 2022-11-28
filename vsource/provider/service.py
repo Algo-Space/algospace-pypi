@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-11-22 16:26:56
+@LastEditTime: 2022-11-28 17:45:27
 '''
 
 from typing import Callable
@@ -460,8 +460,8 @@ class Service:
 
     def enroll(self):
         try:
-            enroll(self.algorithm_config.name, self.algorithm_config.version, self.algorithm_config.service_input,
-                   self.algorithm_config.service_output, self.algorithm_config.config_file_content)
+            enroll(self.algorithm_config.name, self.algorithm_config.version, self.algorithm_config.service_input, self.algorithm_config.service_output,
+                   self.algorithm_config.description, self.algorithm_config.scope, self.algorithm_config.chinese_name, self.algorithm_config.document, self.algorithm_config.config_file_content)
             return True
         except Exception as e:
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',

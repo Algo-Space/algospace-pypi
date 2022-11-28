@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-11 13:21:18
 @LastEditors: Kermit
-@LastEditTime: 2022-11-11 15:20:28
+@LastEditTime: 2022-11-28 12:29:04
 '''
 
 import traceback
@@ -53,11 +53,24 @@ def gen_dockerfile(pre_command: list[str], base_image: str, config_path: str):
         template = f.read()
 
     pre_command_lines = ''
-    for index, command_item in enumerate(pre_command):
-        if index < len(pre_command) - 1:
-            pre_command_lines += (f'    {command_item} && \\\n')
-        else:
-            pre_command_lines += (f'    {command_item}')
+    if len(pre_command) > 0:
+        pre_command_lines += '''
+RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak && \\
+    echo "deb http://mirrors.163.com/debian/ stretch main non-free contrib" >> /etc/apt/sources.list && \\
+    echo "deb http://mirrors.163.com/debian/ stretch-updates main non-free contrib" >> /etc/apt/sources.list && \\
+    echo "deb http://mirrors.163.com/debian/ stretch-backports main non-free contrib" >> /etc/apt/sources.list && \\
+    echo "deb-src http://mirrors.163.com/debian/ stretch main non-free contrib" >> /etc/apt/sources.list && \\
+    echo "deb-src http://mirrors.163.com/debian/ stretch-updates main non-free contrib" >> /etc/apt/sources.list && \\
+    echo "deb-src http://mirrors.163.com/debian/ stretch-backports main non-free contrib" >> /etc/apt/sources.list && \\
+    echo "deb http://mirrors.163.com/debian-security/ stretch/updates main non-free contrib" >> /etc/apt/sources.list && \\
+    echo "deb-src http://mirrors.163.com/debian-security/ stretch/updates main non-free contrib" >> /etc/apt/sources.list && \\
+    apt update && \\
+'''
+        for index, command_item in enumerate(pre_command):
+            if index < len(pre_command) - 1:
+                pre_command_lines += (f'    {command_item} && \\\n')
+            else:
+                pre_command_lines += (f'    {command_item}\n')
     template = template.replace('{PRE_COMMAND}', pre_command_lines)
     template = template.replace('{BASE_IMAGE}', base_image)
     template = template.replace('{CONFIG_PATH}', config_path)

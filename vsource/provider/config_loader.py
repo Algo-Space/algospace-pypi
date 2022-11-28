@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 20:19:06
 @LastEditors: Kermit
-@LastEditTime: 2022-11-11 15:12:58
+@LastEditTime: 2022-11-28 12:19:28
 '''
 
 import os
@@ -29,6 +29,7 @@ class ConfigLoader:
         sys.path.pop(0)
         with open(config_path, 'r') as f:
             self.config_file_content = f.read()
+            self.config_dirpath = config_dirpath
 
         self.name: str = getattr(config, 'name', '')
         self.version: str = getattr(config, 'version', '')
@@ -39,8 +40,11 @@ class ConfigLoader:
         self.service_input: dict = getattr(config, 'service_input')
         self.service_output: dict = getattr(config, 'service_output')
 
-        self.chinese_name: str = getattr(config, 'chinese_name', '')
         self.description: str = getattr(config, 'description', '')
+        self.scope: str = getattr(config, 'scope', 'PRIVATE')
+        self.chinese_name: str = getattr(config, 'chinese_name', '')
+        self.document_filepath: str = getattr(config, 'document_filepath', '')
+        self.document: str = ''
         self.gradio_server_host = '127.0.0.1'
         self.gradio_server_port = 7860
 
@@ -80,8 +84,7 @@ class ConfigLoader:
         if len(self.service_filepath) == 0:
             raise ConfigError('ConfigError: \'service_filepath\' is empty.')
         if not os.path.exists(self.service_filepath):
-            raise ConfigError(
-                f'ConfigError: file \'{self.service_filepath}\' does not exist.')
+            raise ConfigError(f'ConfigError: file \'{self.service_filepath}\' does not exist.')
 
         if type(self.service_function) != str:
             raise ConfigError('ConfigError: \'service_function\' is not str.')
@@ -122,10 +125,18 @@ class ConfigLoader:
                     f'ConfigError: type of \'{str(key)}\' in \'service_output\' is not in {str(valid_param_type)}.')
             info['describe'] = str(info.get('describe', ''))
 
-        if type(self.chinese_name) != str:
-            raise ConfigError('ConfigError: \'chinese_name\' is not str.')
         if type(self.description) != str:
             raise ConfigError('ConfigError: \'description\' is not str.')
+        if type(self.scope) != str:
+            raise ConfigError('ConfigError: \'scope\' is not str.')
+        if self.scope not in ['PRIVATE', 'GROUP', 'INSTITUTION', 'PUBLIC']:
+            raise ConfigError('ConfigError: \'scope\' is not in \'PRIVATE\',\'GROUP\',\'INSTITUTION\',\'PUBLIC\'.')
+        if type(self.chinese_name) != str:
+            raise ConfigError('ConfigError: \'chinese_name\' is not str.')
+        if type(self.document_filepath) != str:
+            raise ConfigError('ConfigError: \'document_filepath\' is not str.')
+        if self.document_filepath and not self._read_document_file():
+            raise ConfigError(f'ConfigError: \'{self.document_filepath}\' does not exist.')
 
         if type(self.requirements) != list:
             raise ConfigError('ConfigError: \'requirements\' is not list.')
@@ -156,7 +167,7 @@ class ConfigLoader:
         return __import__(service_filename_noext)
 
     def _get_service_file_info(self) -> dict:
-        service_path = os.path.split(self.service_filepath)[0]
+        service_path = os.path.join(self.config_dirpath, os.path.split(self.service_filepath)[0])
         service_filename = os.path.split(self.service_filepath)[1]
         service_filename_noext = os.path.splitext(service_filename)[0]
         return {
@@ -164,3 +175,15 @@ class ConfigLoader:
             'service_filename': service_filename,
             'service_filename_noext': service_filename_noext
         }
+
+    def _is_document_file_exist(self) -> bool:
+        document_filepath = os.path.join(self.config_dirpath, self.document_filepath)
+        return os.path.exists(document_filepath)
+
+    def _read_document_file(self) -> bool:
+        if not self._is_document_file_exist():
+            return False
+        document_filepath = os.path.join(self.config_dirpath, self.document_filepath)
+        with open(document_filepath, 'r') as f:
+            self.document = f.read()
+        return True

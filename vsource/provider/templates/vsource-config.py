@@ -66,12 +66,16 @@ service_output = {
 
 ############################
 # 可选选项:
-#   - chinese_name: 中文名
-#   - description:  描述算法作用的长文字
+#   - description:          描述算法的简介，简要介绍算法的要点
+#   - scope:                算法可见范围，可选值：PRIVATE（自己可见）、GROUP（小组内可见）、INSTITUTION（机构内可见）、PUBLIC（公开）
+#   - chinese_name:         中文名，将与算法名一同向用户展示
+#   - document_filepath:    文档文件路径，详细介绍算法的要点，可选格式：纯文本、Markdown，相对于本文件路径，如：'./README.md'
 ############################
 
-chinese_name = ''
 description = ''
+scope = 'PRIVATE'
+chinese_name = ''
+document_filepath = ''
 
 ############################
 # 容器式部署选项（用于 generate 命令生成 docker 相关配置）:
