@@ -1,0 +1,4 @@
+version: '3.1'
+services:
+  {ALGORITHM_LOWER_NAME}:
+    image: vsource/{ALGORITHM_NAME}:{ALGORITHM_VERSION}

@@ -1,31 +1,35 @@
-# -*- coding: utf-8 -*-
-# @Author   : Ecohnoch(xcy)
-# @File     : setup.py
-# @Function : TODO
-
 #!/usr/bin/env python
-# coding=utf-8
+# -*- coding:utf-8 -*-
+'''
+@Description: 
+@Author: Kermit
+@Date: 2022-10-06 12:30:47
+@LastEditors: Kermit
+@LastEditTime: 2022-11-16 23:57:52
+'''
 
 from setuptools import setup, find_packages
 
 setup(
     name='vsource',
-    version='v1.1.5',
+    version='v2.0.5',
     description=(
         'Algorithm python library linked to vsource platform.'
     ),
     long_description=open('README.rst', encoding='utf8').read(),
-    author='Ecohnoch',
+    author='DBIIR',
     author_email='chuyuan@vsource.club',
-    maintainer='Ecohnoch',
+    maintainer='DBIIR',
     maintainer_email='chuyuan@vsource.club',
     license='BSD License',
-    packages=find_packages(),
+    packages=find_packages(where='.', include=('vsource',)),
     platforms=["all"],
     url='https://github.com/VSOURCE-Platform/VSOURCE-Library',
     install_requires=[
-        'requests'
+        'requests',
+        'gradio'
     ],
+    python_requires='>=3.7',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Operating System :: OS Independent',
@@ -34,5 +38,11 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Topic :: Software Development :: Libraries'
     ],
-    include_package_data=True
+    include_package_data=True,
+    entry_points={
+        'console_scripts': [
+            'vsource = vsource:run',
+            'vsc = vsource:run'
+        ]
+    }
 )

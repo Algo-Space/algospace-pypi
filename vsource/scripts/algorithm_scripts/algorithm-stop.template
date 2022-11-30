@@ -1,1 +1,0 @@
-docker-compose -f vsource_deploy_compose.yaml stop

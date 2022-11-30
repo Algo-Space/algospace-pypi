@@ -1,2 +1,1 @@
-recursive-include vsource/scripts/algorithm_scripts *.template
-recursive-include vsource/scripts/enroll_service *.template
+recursive-include vsource/provider/templates *
