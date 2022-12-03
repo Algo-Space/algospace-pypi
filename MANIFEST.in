@@ -1,1 +1,1 @@
-recursive-include vsource/provider/templates *
+recursive-include algospace/provider/templates *

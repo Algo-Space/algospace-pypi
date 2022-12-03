@@ -1,0 +1,4 @@
+version: '3.1'
+services:
+  {ALGORITHM_LOWER_NAME}:
+    image: algospace/{ALGORITHM_NAME}:{ALGORITHM_VERSION}

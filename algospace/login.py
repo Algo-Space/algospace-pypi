@@ -13,8 +13,8 @@ import time
 from typing import Optional
 import requests
 import traceback
-import vsource.config as config
-from vsource.exceptions import LoginError
+import algospace.config as config
+from algospace.exceptions import LoginError
 
 
 class Singleton(type):

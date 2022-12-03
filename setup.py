@@ -1,30 +1,31 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 '''
-@Description: 
+@Description: Setuptools
 @Author: Kermit
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-11-16 23:57:52
+@LastEditTime: 2022-12-03 21:02:49
 '''
 
 from setuptools import setup, find_packages
 
 setup(
-    name='vsource',
-    version='v2.0.5',
+    name='algospace',
+    version='v0.1.0',
     description=(
-        'Algorithm python library linked to vsource platform.'
+        'AlgoSpace: A platform for displaying algorithm achievements'
     ),
-    long_description=open('README.rst', encoding='utf8').read(),
+    long_description=open('README.md', encoding='utf8').read(),
+    long_description_content_type='text/markdown',
     author='DBIIR',
-    author_email='chuyuan@vsource.club',
+    author_email='ckeming@outlook.com',
     maintainer='DBIIR',
-    maintainer_email='chuyuan@vsource.club',
+    maintainer_email='ckeming@outlook.com',
     license='BSD License',
-    packages=find_packages(where='.', include=('vsource',)),
+    packages=find_packages(where='.', include=('algospace',)),
     platforms=["all"],
-    url='https://github.com/VSOURCE-Platform/VSOURCE-Library',
+    url='https://github.com/Algo-Space/algospace-pypi',
     install_requires=[
         'requests',
         'gradio'
@@ -35,14 +36,14 @@ setup(
         'Operating System :: OS Independent',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Topic :: Software Development :: Libraries'
     ],
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'vsource = vsource:run',
-            'vsc = vsource:run'
+            'algospace = algospace:run',
+            'asc = algospace:run'
         ]
     }
 )

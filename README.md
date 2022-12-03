@@ -1,87 +1,98 @@
-## VSOURCE-Library
+# 发布方本地部署指南
 
-链接[VSOURCE_FACE_PLATFORM](https://github.com/VSOURCE-Platform/VSOURCE_FACE_PLATFORM) ，采用平台里的RESTFUL API提供一套本地能够使用的算法库。 
+> 最保密、最快速的发布方式
 
-```bash
-pip install vsource -i https://pypi.python.org/simple
+> ⚡️⚡️⚡️ 一分钟极速发布 ⚡️⚡️⚡️
+
+## 所需环境
+
+👉 任何可以上网的计算机
+
+👉 可以跑通的算法
+
+👉 `Python>=3.7`
+
+## 第一步：准备算法预测函数
+
+例如：
+
+```Python
+def landmark_detection(image_path):
+    ''' 
+    人脸关键点标注
+    args:
+        image_path: 本地图片路径
+    '''
+    # 这里是具体算法实现 #
+    return {
+        'output_image_path': output_image_path,  # 带关键点标注的本地图片路径
+        'dets': dets,                            # 目标图像检测的人脸坐标点
+    }
 ```
 
-目前功能：
+## 第二步：安装 Python 包
 
-1. 人脸识别：输入两张人脸图像判断来自一个人的概率
-2. 说话人识别：输入两个音频判断来自一个人的概率
-3. 人脸检测：输入一张图像检测出所有的人脸框图
-4. 人脸属性：输入一张图像检测人脸并判断人脸的表情和年龄
+在算法所用 Python 环境的命令行执行：
 
-一个人脸识别的Demo：
-
-```python
-import vsource
-
-if __name__ == '__main__':
-    username = {{ secrets.username }}
-    password = {{ secrets.password }}
-    vsource.login(username, password)
-
-    face_path1 = 'examples/0006_01.jpg'
-    face_path2 = 'examples/0007_01.jpg'
-    score = vsource.face_recognition(face_path1, face_path2)
-    print(score)
+```Bash
+pip install algospace -i https://pypi.python.org/simple
 ```
 
-一个说话人识别的Demo:
+## 第三步：初始化配置文件
 
-```python
-import vsource
+进入算法根目录，命令行执行：
 
-if __name__ == '__main__':
-    username = {{ serects.username }}
-    password = {{ serects.password }}
-    vsource.login(username, password)
-
-    audio_path1 = 'examples/0.wav'
-    audio_path2 = 'examples/1.wav'
-    score = vsource.speaker_recognition(audio_path1, audio_path2)
-    print(score)
+```Bash
+algospace init
 ```
 
-一个人脸检测的Demo:
+> `algospace` 命令也可以简写为 `asc`
 
-```python
-import vsource
+执行后在当前目录下生成 `algospace-config.py` 配置文件。
 
-if __name__ == '__main__':
-    username = {{ serects.username }}
-    password = {{ serects.password }}
-    vsource.login(username, password)
+## 第四步：填写配置文件
 
-    face_path1 = 'examples/0008_01.jpg'
-    result = vsource.face_detection(face_path1)
-    print(result)
+根据 `algospace-config.py` 中的注释信息，填写第一步准备完成的预测函数的信息。
+
+例如第一步预测函数的配置信息应当填写为：
+
+```Python
+service_filepath = './main.py'
+service_function = 'landmark_detection'
+service_input = {
+    'image_path': {
+        'type': 'image_path',
+        'describe': '人脸图片',
+    }
+}
+service_output = {
+    'output_image_path': {
+        'type': 'image_path',
+        'describe': '带标注点的人脸图片'
+    },
+    'dets': {
+        'type': 'str',
+        'describe': '目标图像检测的人脸坐标点'
+    }
+}
 ```
 
-一个人脸属性的Demo:
+## 最后一步：运行！
 
-```python
-import vsource
+进入算法根目录，命令行执行：
 
-if __name__ == '__main__':
-    username = {{ serects.username }}
-    password = {{ serects.password }}
-    vsource.login(username, password)
-
-    face_path1 = 'examples/0008_01.jpg'
-    result = vsource.face_attribute(face_path1)
-    print(result)
-    # 其他同学实现的版本
-    result2 = vsource.face_attribute(face_path1, version='fsx')
-    print(result2)
-    result3 = vsource.face_attribute(face_path1, version='cgy-2')
-    print(result3)
+```Bash
+algospace start
 ```
 
-TIPS:
+也可以挂在后台运行：
 
-1. 关于用户名和密码，防止恶意的请求进入，导致服务器收到大量的请求后排队时间过长进一步让服务都不可用，所以暂时还是需要登录态，关于试用的用户名和密码可以联系我。
-2. 持续的更新各种算法中。
-3. 算法如果遇到超时，可以设置参数max_interval=x秒，每个算法都带这个参数，比如face_recognition(face_path, max_interval=100)。如果长时间没有结果，说明算法运行时出现了错误。
+```Bash
+nohup algospace start > ./algospace.log 2>&1 &
+```
+
+
+
+**🎉 算法将会自动注册、运行、发布。**
+
+**🎉 稍等片刻后即可在「我的算法」页面中查看新增的算法。**

@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-24 14:45:40
 @LastEditors: Kermit
-@LastEditTime: 2022-11-28 13:09:08
+@LastEditTime: 2022-12-03 20:31:23
 '''
 
 import os
@@ -64,3 +64,7 @@ class Algoinfo:
     @property
     def gradio_page(self):
         return f'https://vsource.club/algo/{self.lower_name}/gradio/'
+    
+    @property
+    def algorithm_site(self):
+        return f'https://vsource.club/algorithm/{self.name}/{self.version}'

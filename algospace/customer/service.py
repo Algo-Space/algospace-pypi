@@ -10,8 +10,8 @@
 
 
 from typing import Optional
-from vsource.exceptions import LoginError
-from vsource.login import login as ori_login
+from algospace.exceptions import LoginError
+from algospace.login import login as ori_login
 from .config import call_timeout
 from .fn import AlgoFunction
 

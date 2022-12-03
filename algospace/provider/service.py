@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-11-28 17:45:27
+@LastEditTime: 2022-12-03 21:10:13
 '''
 
 from typing import Callable
@@ -21,7 +21,7 @@ import threading
 import socket
 import traceback
 import requests
-from vsource.login import login, login_instance
+from algospace.login import login, login_instance
 from .config_loader import ConfigLoader, valid_param_type
 from .enroll import enroll, verify_config, is_component_normal
 from .stdio import GradioPrint, QueueStdIO, QueueStdIOExec
@@ -132,9 +132,9 @@ class ApiService:
     def get_example(self):
         is_pure_name = re.match('^[a-zA-Z0-9_]*$', self.algorithm_config.name) is not None   # type: ignore
         if is_pure_name:
-            example = f'vsource.{self.algorithm_config.name}'
+            example = f'algospace.{self.algorithm_config.name}'
         else:
-            example = f'vsource.fn(\'{self.algorithm_config.name}\')'
+            example = f'algospace.fn(\'{self.algorithm_config.name}\')'
         example += f'(' + ", ".join([f"{key}: {input_dict['type']}" for key,
                                      input_dict in self.algorithm_config.service_input.items()])+')'
         return example
@@ -193,7 +193,7 @@ class GradioService:
 
         gr_interface = gr.Interface(
             title=self.algorithm_info.full_name,
-            description=self.algorithm_config.description,
+            # description=self.algorithm_config.description,
             fn=fn,
             inputs=inputs,
             outputs=outputs,
@@ -342,8 +342,7 @@ class Service:
         self.algorithm_config.gradio_server_port = gradio_port
 
         # 开始处理
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}] [Service] Call through gradio: {self.algorithm_info.gradio_page}')
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}] [Service] Call through pypi: \'{self.api_service.get_example()}\'')
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}] [Service] Your algorithm site: {self.algorithm_info.algorithm_site}')
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}] [Service] Start handling...')
         print('')
         while True:
@@ -474,7 +473,7 @@ class Service:
                                  self.algorithm_config.service_output)
             if file:
                 dirpath = os.path.dirname(self.algorithm_config.config_path)
-                filepath = os.path.join(dirpath, 'vsource-config-origin.py')
+                filepath = os.path.join(dirpath, 'algospace-config-origin.py')
                 with open(filepath, 'w') as f:
                     f.write(file)
                 print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
@@ -580,9 +579,9 @@ class Service:
 
 def run_service(config_path: str) -> None:
     try:
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[VSource] Init.')
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Init.')
         service = Service(config_path)
         asyncio.run(service.start())
     except:
         traceback.print_exc()
-    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[VSource] Exit.')
+    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Exit.')

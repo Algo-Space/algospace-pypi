@@ -20,22 +20,22 @@ def generate_docker_config(config_path: str):
         algorithm_info = Algoinfo(algorithm_config.name, algorithm_config.version)
 
         gen_requirements_txt(algorithm_config.requirements)
-        print('[VSource] [Step 1/4] Requirements has been successfully generated!')
+        print('[AlgoSpace] [Step 1/4] Requirements has been successfully generated!')
         gen_dockerfile(algorithm_config.pre_command, algorithm_config.base_image, config_path)
-        print('[VSource] [Step 2/4] Dockerfile has been successfully generated!')
+        print('[AlgoSpace] [Step 2/4] Dockerfile has been successfully generated!')
         gen_docker_compose(algorithm_info.name, algorithm_info.version, algorithm_info.lower_name)
-        print('[VSource] [Step 3/4] Docker compose file has been successfully generated!')
+        print('[AlgoSpace] [Step 3/4] Docker compose file has been successfully generated!')
         gen_control_script(algorithm_info.name, algorithm_info.version)
-        print('[VSource] [Step 4/4] Docker control file has been successfully generated!')
-        print(f'[VSource] Generate successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}')
+        print('[AlgoSpace] [Step 4/4] Docker control file has been successfully generated!')
+        print(f'[AlgoSpace] Generate successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}')
     except Exception as e:
         traceback.print_exc()
-        print('[VSource] Generate error:', str(e))
+        print('[AlgoSpace] Generate error:', str(e))
 
 
 def gen_requirements_txt(requirements: list[str]):
-    requirements.append('vsource')
-    with open('vsource-requirements.txt', 'w') as f:
+    requirements.append('algospace')
+    with open('algospace-requirements.txt', 'w') as f:
         for requirements_item in requirements:
             if 'torch==' in requirements_item.replace(' ', ''):
                 # 如果是Pytorch，要从官网下载可支持版本，否则会出问题，查看 Dockerfile 那里
@@ -49,7 +49,7 @@ def gen_requirements_txt(requirements: list[str]):
 
 
 def gen_dockerfile(pre_command: list[str], base_image: str, config_path: str):
-    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'vsource-dockerfile'), 'r') as f:
+    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'algospace-dockerfile'), 'r') as f:
         template = f.read()
 
     pre_command_lines = ''
@@ -75,36 +75,36 @@ RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak && \\
     template = template.replace('{BASE_IMAGE}', base_image)
     template = template.replace('{CONFIG_PATH}', config_path)
 
-    with open(os.path.join('vsource-dockerfile'), 'w') as f:
+    with open(os.path.join('algospace-dockerfile'), 'w') as f:
         f.write(template)
 
 
 def gen_docker_compose(name: str, version: str, lower_name: str):
-    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'vsource-docker-compose.yml'), 'r') as f:
+    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'algospace-docker-compose.yml'), 'r') as f:
         template = f.read()
 
     template = template.replace('{ALGORITHM_LOWER_NAME}', lower_name)
     template = template.replace('{ALGORITHM_NAME}', name)
     template = template.replace('{ALGORITHM_VERSION}', version)
 
-    with open(os.path.join('vsource-docker-compose.yml'), 'w') as f:
+    with open(os.path.join('algospace-docker-compose.yml'), 'w') as f:
         f.write(template)
 
 
 def gen_control_script(name: str, version: str):
-    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'vsource-docker-start.sh'), 'r') as f:
+    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'algospace-docker-start.sh'), 'r') as f:
         template = f.read()
-    with open(os.path.join('vsource-docker-start.sh'), 'w') as f:
+    with open(os.path.join('algospace-docker-start.sh'), 'w') as f:
         template = template.replace('{ALGORITHM_NAME}', name)
         template = template.replace('{ALGORITHM_VERSION}', version)
         f.write(template)
 
-    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'vsource-docker-stop.sh'), 'r') as f:
+    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'algospace-docker-stop.sh'), 'r') as f:
         template = f.read()
-    with open(os.path.join('vsource-docker-stop.sh'), 'w') as f:
+    with open(os.path.join('algospace-docker-stop.sh'), 'w') as f:
         f.write(template)
 
-    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'vsource-docker-logs.sh'), 'r') as f:
+    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'algospace-docker-logs.sh'), 'r') as f:
         template = f.read()
-    with open(os.path.join('vsource-docker-logs.sh'), 'w') as f:
+    with open(os.path.join('algospace-docker-logs.sh'), 'w') as f:
         f.write(template)

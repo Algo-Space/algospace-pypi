@@ -9,15 +9,15 @@
 '''
 
 from typing import Optional, Callable
-from vsource.login import login_instance
+from algospace.login import login_instance
 import os
 import json
 import time
 import requests
 import traceback
 from . import config
-from vsource.exceptions import CallException, TimeOutException
-from vsource.provider.config_loader import valid_param_type
+from algospace.exceptions import CallException, TimeOutException
+from algospace.provider.config_loader import valid_param_type
 
 
 class AlgoFunction:

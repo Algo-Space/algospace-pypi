@@ -12,7 +12,7 @@ import os
 import sys
 import re
 from typing import Callable, Optional
-from vsource.exceptions import ConfigError
+from algospace.exceptions import ConfigError
 
 valid_param_type = ['str', 'int', 'float', 'image_path', 'video_path', 'voice_path']
 

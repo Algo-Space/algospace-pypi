@@ -12,7 +12,7 @@ from .config import enroll_url, verify_config_url, is_component_normal_url
 import requests
 import time
 import traceback
-from vsource.login import login, login_instance
+from algospace.login import login, login_instance
 from .config_loader import ConfigLoader
 
 
@@ -20,19 +20,19 @@ def enroll_from_config(config_path: str):
     ''' 从配置文件注册 '''
     try:
         algorithm_config = ConfigLoader(config_path)
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[VSource] Login...')
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Login...')
         if not login(algorithm_config.username, algorithm_config.password):
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[VSource] Login failed. Please check your password.')
+                  '[AlgoSpace] Login failed. Please check your password.')
             return
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[VSource] Enroll processing...')
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Enroll processing...')
         enroll(algorithm_config.name, algorithm_config.version, algorithm_config.service_input, algorithm_config.service_output,
                algorithm_config.description, algorithm_config.scope, algorithm_config.chinese_name, algorithm_config.document, algorithm_config.config_file_content)
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-              f'[VSource] Enroll successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}')
+              f'[AlgoSpace] Enroll successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}')
     except Exception as e:
         traceback.print_exc()
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[VSource] Enroll error:', str(e))
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Enroll error:', str(e))
 
 
 def enroll(name: str, version: str, input: dict, output: dict, description: str, scope: str, chinese_name: str, document: str, config_file: str):

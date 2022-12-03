@@ -3,7 +3,7 @@ build
 dist
 test_algorithm/*
 
-vsource.egg-info
+algospace.egg-info
 demo_performance.py
 aaa.py
 test_algorithm.zip
