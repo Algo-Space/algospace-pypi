@@ -12,7 +12,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='algospace',
-    version='v0.1.0',
+    version='v0.1.1',
     description=(
         'AlgoSpace: A platform for displaying algorithm achievements'
     ),

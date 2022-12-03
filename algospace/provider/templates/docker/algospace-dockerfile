@@ -4,6 +4,7 @@ WORKDIR /work
 ADD ./ /work
 RUN pip config set global.index-url http://mirrors.aliyun.com/pypi/simple/ && \
     pip config set install.trusted-host mirrors.aliyun.com && \
+    pip install algospace -i https://pypi.python.org/simple && \
     pip --timeout=1000000 install -r algospace-requirements.txt
 
 CMD algospace start -c {CONFIG_PATH}

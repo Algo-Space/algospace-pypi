@@ -34,7 +34,6 @@ def generate_docker_config(config_path: str):
 
 
 def gen_requirements_txt(requirements: list[str]):
-    requirements.append('algospace')
     with open('algospace-requirements.txt', 'w') as f:
         for requirements_item in requirements:
             if 'torch==' in requirements_item.replace(' ', ''):
