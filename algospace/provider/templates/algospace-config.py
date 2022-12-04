@@ -86,4 +86,4 @@ document_filepath = ''
 
 requirements = []
 pre_command = []
-base_image = ''
+base_image = 'python:3.9'
