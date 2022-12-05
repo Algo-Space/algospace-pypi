@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-24 14:45:40
 @LastEditors: Kermit
-@LastEditTime: 2022-12-03 20:31:23
+@LastEditTime: 2022-12-05 17:51:02
 '''
 
 import os
@@ -38,6 +38,14 @@ class Algoinfo:
         return self.full_name.replace('-', '_').replace('.',  '_').upper()
 
     @property
+    def image_name(self):
+        return self.name.replace('@', '_').lower()  # 镜像的名称需要限制为 [a-z0-9], 其中可以出现的符号为 [-._]
+
+    @property
+    def image_version(self):
+        return self.version.lower()  # 镜像的名称需要限制为 [a-z0-9], 其中可以出现的符号为 [-._]
+
+    @property
     def heartbeat_url(self):
         return 'https://vsource.club/core/heartbeat/send'
 
@@ -64,7 +72,7 @@ class Algoinfo:
     @property
     def gradio_page(self):
         return f'https://vsource.club/algo/{self.lower_name}/gradio/'
-    
+
     @property
     def algorithm_site(self):
         return f'https://vsource.club/algorithm/{self.name}/{self.version}'

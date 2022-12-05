@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-11 13:21:18
 @LastEditors: Kermit
-@LastEditTime: 2022-11-28 12:29:04
+@LastEditTime: 2022-12-05 17:52:13
 '''
 
 import traceback
@@ -23,9 +23,9 @@ def generate_docker_config(config_path: str):
         print('[AlgoSpace] [Step 1/4] Requirements has been successfully generated!')
         gen_dockerfile(algorithm_config.pre_command, algorithm_config.base_image, config_path)
         print('[AlgoSpace] [Step 2/4] Dockerfile has been successfully generated!')
-        gen_docker_compose(algorithm_info.name, algorithm_info.version, algorithm_info.lower_name)
+        gen_docker_compose(algorithm_info.image_name, algorithm_info.image_version, algorithm_info.lower_name)
         print('[AlgoSpace] [Step 3/4] Docker compose file has been successfully generated!')
-        gen_control_script(algorithm_info.name, algorithm_info.version)
+        gen_control_script(algorithm_info.image_name, algorithm_info.image_version)
         print('[AlgoSpace] [Step 4/4] Docker control file has been successfully generated!')
         print(f'[AlgoSpace] Generate successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}')
     except Exception as e:
