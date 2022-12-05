@@ -16,7 +16,7 @@ from .config import Algoinfo
 
 def generate_docker_config(config_path: str):
     try:
-        algorithm_config = ConfigLoader(config_path)
+        algorithm_config = ConfigLoader(config_path, is_verify_service=False)
         algorithm_info = Algoinfo(algorithm_config.name, algorithm_config.version)
 
         gen_requirements_txt(algorithm_config.requirements)

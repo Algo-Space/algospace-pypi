@@ -18,8 +18,9 @@ valid_param_type = ['str', 'int', 'float', 'image_path', 'video_path', 'voice_pa
 
 
 class ConfigLoader:
-    def __init__(self, config_path: str) -> None:
+    def __init__(self, config_path: str, is_verify_service: bool = True) -> None:
         self.config_path = config_path
+        self.is_verify_service = is_verify_service
         # 导入配置
         config_dirpath = os.path.split(config_path)[0]
         config_filename = os.path.split(config_path)[1]
@@ -90,12 +91,13 @@ class ConfigLoader:
             raise ConfigError('ConfigError: \'service_function\' is not str.')
         if len(self.service_function) == 0:
             raise ConfigError('ConfigError: \'service_function\' is empty.')
-        if self._import_service_file() is None:
-            raise ConfigError(
-                f'ConfigError: \'{self.service_function}\' does not exist.')
-        if not hasattr(self._get_service_fn(), '__call__'):
-            raise ConfigError(
-                f'ConfigError: \'{self.service_function}\' is not callable.')
+        if self.is_verify_service:
+            if self._import_service_file() is None:
+                raise ConfigError(
+                    f'ConfigError: \'{self.service_function}\' does not exist.')
+            if not hasattr(self._get_service_fn(), '__call__'):
+                raise ConfigError(
+                    f'ConfigError: \'{self.service_function}\' is not callable.')
 
         if type(self.service_input) != dict:
             raise ConfigError('ConfigError: \'service_input\' is not dict.')
