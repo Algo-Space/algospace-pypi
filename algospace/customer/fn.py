@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-11 15:47:20
 @LastEditors: Kermit
-@LastEditTime: 2022-11-11 21:11:15
+@LastEditTime: 2022-12-05 17:42:32
 '''
 
 from typing import Optional, Callable
@@ -57,7 +57,7 @@ class AlgoFunction:
     def get_input_type_class(self, type: str, ) -> Callable:
         ''' 获取处理每种类型的 Callable 对象 '''
         if type not in valid_param_type:
-            raise Exception(f'Param type \'{type}\' is not available.')
+            raise Exception(f'Param type \'{type}\' is not available. Please try to update your algospace version.')
         elif type == 'str':
             return str
         elif type == 'int':
@@ -76,7 +76,7 @@ class AlgoFunction:
     def get_output_type_class(self, type: str, ) -> Callable:
         ''' 获取处理每种类型的 Callable 对象 '''
         if type not in valid_param_type:
-            raise Exception(f'Param type \'{type}\' is not available.')
+            raise Exception(f'Param type \'{type}\' is not available. Please try to update your algospace version.')
         elif type == 'str':
             return str
         elif type == 'int':

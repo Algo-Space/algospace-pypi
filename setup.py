@@ -5,14 +5,15 @@
 @Author: Kermit
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-12-03 21:02:49
+@LastEditTime: 2022-12-05 17:38:19
 '''
 
 from setuptools import setup, find_packages
+from algospace import __version__
 
 setup(
     name='algospace',
-    version='v0.1.1',
+    version=__version__,
     description=(
         'AlgoSpace: A platform for displaying algorithm achievements'
     ),

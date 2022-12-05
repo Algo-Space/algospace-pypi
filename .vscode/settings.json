@@ -25,13 +25,13 @@
                 "functionParams": "ts"
             },
             "python": {
-                "head": "\"\"\"",
+                "head": "'''",
                 "middle": "@",
-                "end": "\"\"\"",
+                "end": "'''",
                 "functionSymbol": {
-                    "head": "\"\"\"",
+                    "head": "'''",
                     "middle": ":",
-                    "end": "\"\"\"",
+                    "end": "'''",
                 },
                 "functionParams": "python"
             }
