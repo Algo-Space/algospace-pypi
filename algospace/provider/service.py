@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 '''
-@Description: 
+@Description: 算法提供者核心服务
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-12-03 21:10:13
+@LastEditTime: 2022-12-05 20:46:51
 '''
 
-from typing import Callable
+from typing import Callable, Optional
 from . import config
 from .config import Algoinfo
 import urllib.request
@@ -31,6 +31,24 @@ import time
 import os
 import sys
 import re
+
+
+class FnService:
+    ''' 模型函数 Service '''
+
+    def __init__(self, algorithm_config: ConfigLoader) -> None:
+        self.algorithm_config = algorithm_config
+
+    def launch(self, fn_req_queue: multiprocessing.Queue, fn_res_queue: multiprocessing.Queue) -> None:
+        ''' 启动函数服务 '''
+        self.algorithm_config.verify_service()  # 校验函数配置并附带将函数 import 入进程
+        while True:
+            try:
+                args, kwargs = fn_req_queue.get()
+                out = self.algorithm_config.fn(*args, **kwargs)
+                fn_res_queue.put((out, None))
+            except Exception as e:
+                fn_res_queue.put((None, e))
 
 
 class ApiService:
@@ -116,13 +134,21 @@ class ApiService:
         else:
             return str
 
-    def handle(self, input_info: dict) -> dict:
+    def handle(self,
+               input_info: dict,
+               fn_req_queue: multiprocessing.Queue,
+               fn_res_queue: multiprocessing.Queue) -> dict:
         ''' 处理请求 '''
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Api Service] Begin to handle.')
         params = {}
         for key, info in self.algorithm_config.service_input.items():
             params[key] = self.get_input_type_class(info['type'])(input_info[key])
-        out = self.algorithm_config.fn(**params)
+
+        fn_req_queue.put(((), params))
+        out, e = fn_res_queue.get()
+        if e is not None:
+            raise e
+
         output_info = {}
         for key, info in self.algorithm_config.service_output.items():
             output_info[key] = self.get_output_type_class(info['type'])(out[key])
@@ -166,7 +192,11 @@ class GradioService:
         else:
             return gr.Textbox(placeholder=describe)
 
-    def launch(self, fn_lock: Lock, gradio_port_con: Connection) -> None:
+    def launch(self,
+               fn_lock: Lock,
+               fn_req_queue: multiprocessing.Queue,
+               fn_res_queue: multiprocessing.Queue,
+               gradio_port_con: Connection) -> None:
         ''' 启动 Gradio 服务 '''
         def fn(*args):
             try:
@@ -174,7 +204,12 @@ class GradioService:
                 kwargs = {}
                 for index, (key, _) in enumerate(self.algorithm_config.service_input.items()):
                     kwargs[key] = args[index]
-                out = self.algorithm_config.fn(**kwargs)
+
+                fn_req_queue.put(((), kwargs))
+                out, e = fn_res_queue.get()
+                if e is not None:
+                    raise e
+
                 fn_lock.release()
                 output_info = []
                 for key, _ in self.algorithm_config.service_output.items():
@@ -332,10 +367,15 @@ class Service:
         self.login_headers = {}
         self.login_headers_timestamp = 0
 
+        self.fn_service = FnService(self.algorithm_config)
         self.api_service = ApiService(self.algorithm_config, self.algorithm_info)
         self.gradio_service = GradioService(self.algorithm_config, self.algorithm_info)
 
-    def launch_service(self, fn_lock: Lock, gradio_port_con: Connection):
+    def launch_service(self,
+                       fn_lock: Lock,
+                       fn_req_queue: multiprocessing.Queue,
+                       fn_res_queue: multiprocessing.Queue,
+                       gradio_port_con: Connection):
         # 从管道接受 Gradio 运行成功的端口
         gradio_port = int(gradio_port_con.recv())
         gradio_port_con.close()
@@ -380,7 +420,7 @@ class Service:
                         # 处理计算请求
                         try:
                             fn_lock.acquire()
-                            result = self.api_service.handle(req_info['data'])
+                            result = self.api_service.handle(req_info['data'], fn_req_queue, fn_res_queue)
                             fn_lock.release()
                         except:
                             fn_lock.release()
@@ -438,15 +478,28 @@ class Service:
                 time.sleep(config.call_interval)
                 continue
 
-    def launch(self, stdout_queueu: multiprocessing.Queue, stderr_queueu: multiprocessing.Queue, type: str, fn_lock: Lock, gradio_port_con: Connection):
-        sys.stdout = QueueStdIO(sys.stdout, stdout_queueu)
-        sys.stderr = QueueStdIO(sys.stderr, stderr_queueu)
+    def launch(self,
+               stdout_queue: multiprocessing.Queue,
+               stderr_queue: multiprocessing.Queue,
+               type: str,
+               fn_lock: Lock,
+               fn_req_queue: multiprocessing.Queue,
+               fn_res_queue: multiprocessing.Queue,
+               gradio_port_con: Optional[Connection] = None):
+        sys.stdout = QueueStdIO(sys.stdout, stdout_queue)
+        sys.stderr = QueueStdIO(sys.stderr, stderr_queue)
         if not self.login():
             exit(1)
-        if type == 'SERVICE':
-            self.launch_service(fn_lock, gradio_port_con)
+        if type == 'FN':
+            self.fn_service.launch(fn_req_queue, fn_res_queue)
+        elif type == 'SERVICE':
+            if not gradio_port_con:
+                exit(1)
+            self.launch_service(fn_lock, fn_req_queue, fn_res_queue, gradio_port_con)
         elif type == 'GRADIO':
-            self.gradio_service.launch(fn_lock, gradio_port_con)
+            if not gradio_port_con:
+                exit(1)
+            self.gradio_service.launch(fn_lock, fn_req_queue, fn_res_queue, gradio_port_con)
         else:
             raise Exception('Argument "type" is unaccessable.')
 
@@ -459,8 +512,15 @@ class Service:
 
     def enroll(self):
         try:
-            enroll(self.algorithm_config.name, self.algorithm_config.version, self.algorithm_config.service_input, self.algorithm_config.service_output,
-                   self.algorithm_config.description, self.algorithm_config.scope, self.algorithm_config.chinese_name, self.algorithm_config.document, self.algorithm_config.config_file_content)
+            enroll(self.algorithm_config.name,
+                   self.algorithm_config.version,
+                   self.algorithm_config.service_input,
+                   self.algorithm_config.service_output,
+                   self.algorithm_config.description,
+                   self.algorithm_config.scope,
+                   self.algorithm_config.chinese_name,
+                   self.algorithm_config.document,
+                   self.algorithm_config.config_file_content)
             return True
         except Exception as e:
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
@@ -469,7 +529,9 @@ class Service:
 
     def verify_config(self):
         try:
-            file = verify_config(self.algorithm_config.name, self.algorithm_config.version, self.algorithm_config.service_input,
+            file = verify_config(self.algorithm_config.name,
+                                 self.algorithm_config.version,
+                                 self.algorithm_config.service_input,
                                  self.algorithm_config.service_output)
             if file:
                 dirpath = os.path.dirname(self.algorithm_config.config_path)
@@ -513,20 +575,48 @@ class Service:
         self.is_component_normal()
 
         # 开启子进程
-        stdout_queueu = multiprocessing.Queue(maxsize=0)  # 子进程通过队列将标准输出重定向到父进程
-        stderr_queueu = multiprocessing.Queue(maxsize=0)  # 子进程通过队列将标准输出重定向到父进程
+        stdout_queue = multiprocessing.Queue(maxsize=0)  # 子进程通过队列将标准输出重定向到父进程
+        stderr_queue = multiprocessing.Queue(maxsize=0)  # 子进程通过队列将标准输出重定向到父进程
         fn_lock = multiprocessing.Lock()  # 模型函数的锁
+        fn_req_queue = multiprocessing.Queue(maxsize=0)  # 模型函数的请求队列
+        fn_res_queue = multiprocessing.Queue(maxsize=0)  # 模型函数的响应队列
         gradio_port_con1, gradio_port_con2 = multiprocessing.Pipe()  # 传递 Gradio 端口的管道
 
+        def create_fn_process():
+            fn_process = multiprocessing.Process(target=self.launch,
+                                                 args=(stdout_queue,
+                                                       stderr_queue,
+                                                       'FN',
+                                                       fn_lock,
+                                                       fn_req_queue,
+                                                       fn_res_queue),
+                                                 daemon=True)
+            fn_process.start()
+            return fn_process
+
         def create_service_process():
-            service_process = multiprocessing.Process(target=self.launch, args=(
-                stdout_queueu, stderr_queueu, 'SERVICE', fn_lock, gradio_port_con2), daemon=True)
+            service_process = multiprocessing.Process(target=self.launch,
+                                                      args=(stdout_queue,
+                                                            stderr_queue,
+                                                            'SERVICE',
+                                                            fn_lock,
+                                                            fn_req_queue,
+                                                            fn_res_queue,
+                                                            gradio_port_con2),
+                                                      daemon=True)
             service_process.start()
             return service_process
 
         def create_gradio_process():
-            gradio_process = multiprocessing.Process(target=self.launch, args=(
-                stdout_queueu, stderr_queueu, 'GRADIO', fn_lock, gradio_port_con1), daemon=True)
+            gradio_process = multiprocessing.Process(target=self.launch,
+                                                     args=(stdout_queue,
+                                                           stderr_queue,
+                                                           'GRADIO',
+                                                           fn_lock,
+                                                           fn_req_queue,
+                                                           fn_res_queue,
+                                                           gradio_port_con1),
+                                                     daemon=True)
             gradio_process.start()
             return gradio_process
 
@@ -536,6 +626,7 @@ class Service:
                 process.kill()
             return is_alive
 
+        fn_process = create_fn_process()
         service_process = create_service_process()
         gradio_process = create_gradio_process()
 
@@ -554,22 +645,25 @@ class Service:
                 times += 1
 
         async def alive_task():
+            nonlocal fn_process
             nonlocal service_process
             nonlocal gradio_process
             while True:
                 await asyncio.sleep(1)
+                if not check_process_alive(fn_process):
+                    fn_process = create_fn_process()
                 if not check_process_alive(service_process):
                     service_process = create_service_process()
                 if not check_process_alive(gradio_process):
-                    gradio_process = create_service_process()
+                    gradio_process = create_gradio_process()
 
         async def subprocess_stdout_task():
-            stdout_exec = QueueStdIOExec(sys.stdout, stdout_queueu).exec
+            stdout_exec = QueueStdIOExec(sys.stdout, stdout_queue).exec
             while True:
                 await asyncio.get_running_loop().run_in_executor(None, stdout_exec)
 
         async def subprocess_stderr_task():
-            stderr_exec = QueueStdIOExec(sys.stderr, stderr_queueu).exec
+            stderr_exec = QueueStdIOExec(sys.stderr, stderr_queue).exec
             while True:
                 await asyncio.get_running_loop().run_in_executor(None, stderr_exec)
 

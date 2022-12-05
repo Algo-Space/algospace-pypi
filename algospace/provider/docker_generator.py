@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-11 13:21:18
 @LastEditors: Kermit
-@LastEditTime: 2022-12-05 17:52:13
+@LastEditTime: 2022-12-05 20:44:59
 '''
 
 import traceback
@@ -16,7 +16,7 @@ from .config import Algoinfo
 
 def generate_docker_config(config_path: str):
     try:
-        algorithm_config = ConfigLoader(config_path, is_verify_service=False)
+        algorithm_config = ConfigLoader(config_path)
         algorithm_info = Algoinfo(algorithm_config.name, algorithm_config.version)
 
         gen_requirements_txt(algorithm_config.requirements)

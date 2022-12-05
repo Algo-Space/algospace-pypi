@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 20:19:06
 @LastEditors: Kermit
-@LastEditTime: 2022-11-28 12:19:28
+@LastEditTime: 2022-12-05 20:44:30
 '''
 
 import os
@@ -18,7 +18,7 @@ valid_param_type = ['str', 'int', 'float', 'image_path', 'video_path', 'voice_pa
 
 
 class ConfigLoader:
-    def __init__(self, config_path: str, is_verify_service: bool = True) -> None:
+    def __init__(self, config_path: str, is_verify_service: bool = False) -> None:
         self.config_path = config_path
         self.is_verify_service = is_verify_service
         # 导入配置
@@ -92,12 +92,7 @@ class ConfigLoader:
         if len(self.service_function) == 0:
             raise ConfigError('ConfigError: \'service_function\' is empty.')
         if self.is_verify_service:
-            if self._import_service_file() is None:
-                raise ConfigError(
-                    f'ConfigError: \'{self.service_function}\' does not exist.')
-            if not hasattr(self._get_service_fn(), '__call__'):
-                raise ConfigError(
-                    f'ConfigError: \'{self.service_function}\' is not callable.')
+            self.verify_service()
 
         if type(self.service_input) != dict:
             raise ConfigError('ConfigError: \'service_input\' is not dict.')
@@ -157,6 +152,14 @@ class ConfigLoader:
     @property
     def fn(self) -> Callable:
         return self._get_service_fn()  # type: ignore
+
+    def verify_service(self) -> None:
+        if self._import_service_file() is None:
+            raise ConfigError(
+                f'ConfigError: \'{self.service_function}\' does not exist.')
+        if not hasattr(self._get_service_fn(), '__call__'):
+            raise ConfigError(
+                f'ConfigError: \'{self.service_function}\' is not callable.')
 
     def _get_service_fn(self) -> Optional[Callable]:
         return getattr(self._import_service_file(), self.service_function, None)
