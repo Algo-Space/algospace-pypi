@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-12-05 17:38:19
+@LastEditTime: 2022-12-06 12:14:16
 '''
 
 from setuptools import setup, find_packages
@@ -29,7 +29,7 @@ setup(
     url='https://github.com/Algo-Space/algospace-pypi',
     install_requires=[
         'requests',
-        'gradio'
+        'gradio>=3.0'
     ],
     python_requires='>=3.7',
     classifiers=[

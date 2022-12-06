@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-12-05 20:46:51
+@LastEditTime: 2022-12-06 13:07:09
 '''
 
 from typing import Callable, Optional
@@ -637,35 +637,55 @@ class Service:
         async def heartbeat_task():
             times = 0
             while True:
-                if times % 10 == 0:
-                    # 每 10 秒发送心跳
-                    await asyncio.get_running_loop().run_in_executor(None, self.send_heartbeat)
-                    times = 0
-                await asyncio.sleep(1)
-                times += 1
+                try:
+                    await asyncio.sleep(1)
+                    if times % 10 == 0:
+                        # 每 10 秒发送心跳
+                        await asyncio.get_running_loop().run_in_executor(None, self.send_heartbeat)
+                        times = 0
+                    times += 1
+                except Exception as e:
+                    traceback.print_exc()
+                    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                          f'[{self.algorithm_info.upper_name}] Heartbeat error:', str(e))
 
         async def alive_task():
             nonlocal fn_process
             nonlocal service_process
             nonlocal gradio_process
             while True:
-                await asyncio.sleep(1)
-                if not check_process_alive(fn_process):
-                    fn_process = create_fn_process()
-                if not check_process_alive(service_process):
-                    service_process = create_service_process()
-                if not check_process_alive(gradio_process):
-                    gradio_process = create_gradio_process()
+                try:
+                    await asyncio.sleep(1)
+                    if not check_process_alive(fn_process):
+                        fn_process = create_fn_process()
+                    if not check_process_alive(service_process):
+                        service_process = create_service_process()
+                    if not check_process_alive(gradio_process):
+                        gradio_process = create_gradio_process()
+                except Exception as e:
+                    traceback.print_exc()
+                    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                          f'[{self.algorithm_info.upper_name}] Check process alive error:', str(e))
 
         async def subprocess_stdout_task():
             stdout_exec = QueueStdIOExec(sys.stdout, stdout_queue).exec
             while True:
-                await asyncio.get_running_loop().run_in_executor(None, stdout_exec)
+                try:
+                    await asyncio.get_running_loop().run_in_executor(None, stdout_exec)
+                except Exception as e:
+                    traceback.print_exc()
+                    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                          f'[{self.algorithm_info.upper_name}] Handle subprocess stdout error:', str(e))
 
         async def subprocess_stderr_task():
             stderr_exec = QueueStdIOExec(sys.stderr, stderr_queue).exec
             while True:
-                await asyncio.get_running_loop().run_in_executor(None, stderr_exec)
+                try:
+                    await asyncio.get_running_loop().run_in_executor(None, stderr_exec)
+                except Exception as e:
+                    traceback.print_exc()
+                    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                          f'[{self.algorithm_info.upper_name}] Handle subprocess stderr error:', str(e))
 
         tasks = [heartbeat_task(), alive_task(), subprocess_stdout_task(), subprocess_stderr_task()]
         await asyncio.wait(tasks)
