@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-12-06 13:07:09
+@LastEditTime: 2022-12-06 14:53:51
 '''
 
 from typing import Callable, Optional
@@ -275,6 +275,13 @@ class GradioService:
             except:
                 pass
 
+    def launch_self(self, gradio_port_con: Connection) -> None:
+        ''' 启动自主编写的 Gradio 服务 '''
+        self.algorithm_config.verify_gradio_launch()  # 校验自主实现的 Gradio 配置并附带将应用 import 入进程
+        threading.Thread(target=self.check_launched, args=(gradio_port_con,), daemon=True).start()
+        with GradioPrint():
+            self.algorithm_config.gradio_launch_fn()  # 启动 Gradio 服务
+
     def handle(self, input_info: dict) -> dict:
         ''' 处理请求 '''
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Gradio Service] Begin to handle.')
@@ -499,7 +506,10 @@ class Service:
         elif type == 'GRADIO':
             if not gradio_port_con:
                 exit(1)
-            self.gradio_service.launch(fn_lock, fn_req_queue, fn_res_queue, gradio_port_con)
+            if self.algorithm_config.is_self_gradio_launch:
+                self.gradio_service.launch_self(gradio_port_con)
+            else:
+                self.gradio_service.launch(fn_lock, fn_req_queue, fn_res_queue, gradio_port_con)
         else:
             raise Exception('Argument "type" is unaccessable.')
 

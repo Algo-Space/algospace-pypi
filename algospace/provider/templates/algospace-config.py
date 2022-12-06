@@ -65,7 +65,7 @@ service_output = {
 }
 
 ############################
-# 可选选项:
+# 算法详情选项，可在网页端进行修改:
 #   - description:          描述算法的简介，简要介绍算法的要点
 #   - scope:                算法可见范围，可选值：PRIVATE（自己可见）、GROUP（小组内可见）、INSTITUTION（机构内可见）、PUBLIC（公开）
 #   - chinese_name:         中文名，将与算法名一同向用户展示
@@ -78,7 +78,7 @@ chinese_name = ''
 document_filepath = ''
 
 ############################
-# 容器式部署选项（用于 generate 命令生成 docker 相关配置）:
+# 容器式部署选项，用于 generate 命令生成 docker 相关配置:
 #   - requirements: 依赖包，如 ['torch', 'numpy', 'matplotlib==3.6.2']
 #   - pre_command:  容器用于配置环境的命令，构建镜像时依次执行，如 ['apt install -y libgl1-mesa-glx']
 #   - base_image:   构建容器镜像的基础镜像，默认使用 python:3.9
@@ -87,3 +87,20 @@ document_filepath = ''
 requirements = []
 pre_command = []
 base_image = 'python:3.9'
+
+############################
+# 需要自主实现更复杂的 Gradio 应用时，可使用以下选项替代自动生成的 Gradio 应用:
+#   - gradio_launch_filepath: 自主实现的 Gradio 入口文件路径，相对于本文件路径，如：'./gradio_launch.py'
+#   - gradio_launch_function: 自主实现的 Gradio 入口函数名，如：'gradio_launch'，入口函数应当不含任何参数
+#   - gradio_launch_host:     自主实现的 Gradio 服务器地址，同 Gradio 的 GRADIO_SERVER_NAME 配置，默认：'127.0.0.1'
+#   - gradio_launch_port:     自主实现的 Gradio 端口号，同 Gradio 的 GRADIO_SERVER_PORT 配置，默认：7860
+#
+# 提示：
+#   同一版本的算法，不可有多种 Gradio 的实现代码；
+#   若修改 Gradio 的实现代码，请以新版本号启动。
+############################
+
+gradio_launch_filepath = ''
+gradio_launch_function = ''
+gradio_launch_host = '127.0.0.1'
+gradio_launch_port = 7860

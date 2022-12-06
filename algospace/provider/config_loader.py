@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 20:19:06
 @LastEditors: Kermit
-@LastEditTime: 2022-12-05 20:44:30
+@LastEditTime: 2022-12-06 14:41:44
 '''
 
 import os
@@ -18,9 +18,10 @@ valid_param_type = ['str', 'int', 'float', 'image_path', 'video_path', 'voice_pa
 
 
 class ConfigLoader:
-    def __init__(self, config_path: str, is_verify_service: bool = False) -> None:
+    def __init__(self, config_path: str, is_verify_service: bool = False, is_verify_self_gradio_launch: bool = False) -> None:
         self.config_path = config_path
         self.is_verify_service = is_verify_service
+        self.is_verify_self_gradio_launch = is_verify_self_gradio_launch
         # 导入配置
         config_dirpath = os.path.split(config_path)[0]
         config_filename = os.path.split(config_path)[1]
@@ -46,12 +47,23 @@ class ConfigLoader:
         self.chinese_name: str = getattr(config, 'chinese_name', '')
         self.document_filepath: str = getattr(config, 'document_filepath', '')
         self.document: str = ''
-        self.gradio_server_host = '127.0.0.1'
-        self.gradio_server_port = 7860
 
         self.requirements: list[str] = getattr(config, 'requirements', [])
         self.pre_command: list[str] = getattr(config, 'pre_command', [])
         self.base_image: str = getattr(config, 'base_image', 'python:3.9')
+
+        self.gradio_launch_filepath: str = getattr(config, 'gradio_launch_filepath', '')
+        self.gradio_launch_function: str = getattr(config, 'gradio_launch_function', '')
+        self.gradio_launch_host: str = getattr(config, 'gradio_launch_host', '127.0.0.1')
+        self.gradio_launch_port: int = getattr(config, 'gradio_launch_port', 7860)
+        self.is_self_gradio_launch = bool(self.gradio_launch_filepath and self.gradio_launch_function)
+
+        if self.is_self_gradio_launch:
+            self.gradio_server_host = self.gradio_launch_host
+            self.gradio_server_port = self.gradio_launch_port
+        else:
+            self.gradio_server_host = '127.0.0.1'
+            self.gradio_server_port = 7860
 
         self._verify()
 
@@ -149,6 +161,23 @@ class ConfigLoader:
         if type(self.base_image) != str:
             raise ConfigError('ConfigError: \'base_image\' is not str.')
 
+        if self.is_self_gradio_launch:
+            if type(self.gradio_launch_filepath) != str:
+                raise ConfigError('ConfigError: \'gradio_launch_filepath\' is not str.')
+            if not os.path.exists(self.gradio_launch_filepath):
+                raise ConfigError(f'ConfigError: file \'{self.gradio_launch_filepath}\' does not exist.')
+            if type(self.gradio_launch_function) != str:
+                raise ConfigError('ConfigError: \'gradio_launch_function\' is not str.')
+            if self.is_verify_self_gradio_launch:
+                self.verify_gradio_launch()
+
+            if type(self.gradio_launch_host) != str:
+                raise ConfigError('ConfigError: \'gradio_launch_host\' is not str.')
+            if len(self.gradio_launch_host) == 0:
+                raise ConfigError('ConfigError: \'gradio_launch_host\' is empty.')
+            if type(self.gradio_launch_port) != int:
+                raise ConfigError('ConfigError: \'gradio_launch_port\' is not int.')
+
     @property
     def fn(self) -> Callable:
         return self._get_service_fn()  # type: ignore
@@ -192,3 +221,35 @@ class ConfigLoader:
         with open(document_filepath, 'r') as f:
             self.document = f.read()
         return True
+
+    @property
+    def gradio_launch_fn(self) -> Callable:
+        return self._get_gradio_launch_fn()  # type: ignore
+
+    def verify_gradio_launch(self) -> None:
+        if self._import_gradio_launch_file() is None:
+            raise ConfigError(
+                f'ConfigError: \'{self.gradio_launch_function}\' does not exist.')
+        if not hasattr(self._get_gradio_launch_fn(), '__call__'):
+            raise ConfigError(
+                f'ConfigError: \'{self.gradio_launch_function}\' is not callable.')
+
+    def _get_gradio_launch_fn(self) -> Optional[Callable]:
+        return getattr(self._import_gradio_launch_file(), self.gradio_launch_function, None)
+
+    def _import_gradio_launch_file(self):
+        gradio_launch_path = self._get_gradio_launch_file_info()['gradio_launch_path']
+        gradio_launch_filename_noext = self._get_gradio_launch_file_info()['gradio_launch_filename_noext']
+        if gradio_launch_path not in sys.path:
+            sys.path.insert(0, gradio_launch_path)
+        return __import__(gradio_launch_filename_noext)
+
+    def _get_gradio_launch_file_info(self) -> dict:
+        gradio_launch_path = os.path.join(self.config_dirpath, os.path.split(self.gradio_launch_filepath)[0])
+        gradio_launch_filename = os.path.split(self.gradio_launch_filepath)[1]
+        gradio_launch_filename_noext = os.path.splitext(gradio_launch_filename)[0]
+        return {
+            'gradio_launch_path': gradio_launch_path,
+            'gradio_launch_filename': gradio_launch_filename,
+            'gradio_launch_filename_noext': gradio_launch_filename_noext
+        }
