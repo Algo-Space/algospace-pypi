@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-12-06 14:53:51
+@LastEditTime: 2022-12-10 21:15:42
 '''
 
 from typing import Callable, Optional
@@ -307,7 +307,7 @@ class GradioService:
         if res is not None:
             res_status_code = res.status_code
             res_headers = dict(res.headers)
-            res_body = res.text
+            res_body = res.content.hex()
             result = {
                 'status_code': res_status_code,
                 'headers': res_headers,
