@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-12-11 14:48:12
+@LastEditTime: 2022-12-11 15:59:59
 '''
 
 from typing import Callable, Optional
@@ -344,7 +344,7 @@ class GradioService:
                     res = requests.post(url, files={'file': file}, headers=login_instance.get_header())
                     file.close()
 
-        upload_file('./frontend', '.')
+        upload_file('./frontend', '.')  # 上传文件夹里的文件
 
         if not os.path.exists('./frontend/index.html'):
             html_text = requests.get(
@@ -354,8 +354,10 @@ class GradioService:
             html_file.close()
         url = self.algorithm_info.gradio_upload_url + '/index.html'
         file = open('./frontend/index.html', 'r', encoding="UTF-8", errors='ignore')
-        res = requests.post(url, files={'file': file}, headers=login_instance.get_header())
+        res = requests.post(url, files={'file': file}, headers=login_instance.get_header())  # 上传 index.html
         file.close()
+
+        shutil.rmtree('./frontend')  # 删除已上传的文件夹
 
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Gradio Init] Complete.')
         return {}
@@ -652,14 +654,11 @@ class Service:
             while True:
                 await asyncio.sleep(1)
                 if not check_process_alive(fn_process):
-                    raise Exception('FN process is not alive')
-                    # fn_process = create_fn_process()
+                    raise Exception('Fn process is not alive. Please check error log above.')
                 if not check_process_alive(service_process):
                     raise Exception('Service process is not alive')
-                    # service_process = create_service_process()
                 if not check_process_alive(gradio_process):
                     raise Exception('Gradio process is not alive')
-                    # gradio_process = create_gradio_process()
 
         async def heartbeat_task():
             times = 0
