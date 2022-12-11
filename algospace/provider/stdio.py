@@ -5,12 +5,12 @@
 @Author: Kermit
 @Date: 2022-11-07 14:56:36
 @LastEditors: Kermit
-@LastEditTime: 2022-11-22 16:27:35
+@LastEditTime: 2022-12-11 14:33:30
 '''
 
 import sys
 import os
-from typing import Callable, TextIO
+from typing import Callable
 import time
 from multiprocessing import Queue
 
@@ -75,15 +75,22 @@ class GradioPrint(RedirectPrint):
 class QueueStdIO:
     ''' 输出到队列的 IO，用于子进程通过队列将 IO 操作重定向到父进程 '''
 
-    def __init__(self, io: TextIO, queue: Queue):
-        self.io = io
+    def __init__(self, io_name: str, queue: Queue):
+        if io_name == 'stdout':
+            self.io_name = io_name
+            self.io = sys.stdout
+            sys.stdout = self
+        elif io_name == 'stderr':
+            self.io_name = io_name
+            self.io = sys.stderr
+            sys.stderr = self
         self.queue = queue
 
     def __getattr__(self, name: str):
         attr = getattr(self.io, name)
         if hasattr(attr, '__call__'):
             def call(*args, **kwargs):
-                self.queue.put((name, args, kwargs))
+                self.queue.put((self.io_name, name, args, kwargs))
             return call
         else:
             return self.io
@@ -92,14 +99,22 @@ class QueueStdIO:
 class QueueStdIOExec:
     ''' 接收子进程 IO 操作并在父进程执行的处理器 '''
 
-    def __init__(self, io: TextIO, queue: Queue):
-        self.io = io
+    def __init__(self, queue: Queue):
         self.queue = queue
 
     def exec(self):
-        name, args, kwargs = self.queue.get()
-        attr = getattr(self.io, name)
-        if hasattr(attr, '__call__'):
-            attr(*args, **kwargs)
-        if name == 'write':
-            self.io.flush()
+        try:
+            io_name, name, args, kwargs = self.queue.get(block=False)
+            if io_name == 'stdout':
+                io = sys.stdout
+            elif io_name == 'stderr':
+                io = sys.stderr
+            else:
+                raise Exception('Invalid io_name')
+            attr = getattr(io, name)
+            if hasattr(attr, '__call__'):
+                attr(*args, **kwargs)
+            if name == 'write':
+                io.flush()
+        except:
+            pass

@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-12-10 21:15:42
+@LastEditTime: 2022-12-11 14:48:12
 '''
 
 from typing import Callable, Optional
@@ -486,32 +486,37 @@ class Service:
                 continue
 
     def launch(self,
-               stdout_queue: multiprocessing.Queue,
-               stderr_queue: multiprocessing.Queue,
+               stdio_queue: multiprocessing.Queue,
                type: str,
                fn_lock: Lock,
                fn_req_queue: multiprocessing.Queue,
                fn_res_queue: multiprocessing.Queue,
                gradio_port_con: Optional[Connection] = None):
-        sys.stdout = QueueStdIO(sys.stdout, stdout_queue)
-        sys.stderr = QueueStdIO(sys.stderr, stderr_queue)
-        if not self.login():
-            exit(1)
-        if type == 'FN':
-            self.fn_service.launch(fn_req_queue, fn_res_queue)
-        elif type == 'SERVICE':
-            if not gradio_port_con:
-                exit(1)
-            self.launch_service(fn_lock, fn_req_queue, fn_res_queue, gradio_port_con)
-        elif type == 'GRADIO':
-            if not gradio_port_con:
-                exit(1)
-            if self.algorithm_config.is_self_gradio_launch:
-                self.gradio_service.launch_self(gradio_port_con)
+        try:
+            QueueStdIO('stdout', stdio_queue)
+            QueueStdIO('stderr', stdio_queue)
+            if not self.login():
+                raise Exception('Login failed.')
+            if type == 'FN':
+                self.fn_service.launch(fn_req_queue, fn_res_queue)
+            elif type == 'SERVICE':
+                if not gradio_port_con:
+                    raise Exception('Argument \'gradio_port_con\' is None.')
+                self.launch_service(fn_lock, fn_req_queue, fn_res_queue, gradio_port_con)
+            elif type == 'GRADIO':
+                if not gradio_port_con:
+                    raise Exception('Argument \'gradio_port_con\' is None.')
+                if self.algorithm_config.is_self_gradio_launch:
+                    self.gradio_service.launch_self(gradio_port_con)
+                else:
+                    self.gradio_service.launch(fn_lock, fn_req_queue, fn_res_queue, gradio_port_con)
             else:
-                self.gradio_service.launch(fn_lock, fn_req_queue, fn_res_queue, gradio_port_con)
-        else:
-            raise Exception('Argument "type" is unaccessable.')
+                raise Exception('Argument "type" is unaccessable.')
+        except Exception as e:
+            traceback.print_exc()
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                  f'[{self.algorithm_info.upper_name}] Launch {type} error:', str(e))
+            exit(1)
 
     def login(self):
         if not login(self.algorithm_config.username, self.algorithm_config.password):
@@ -585,8 +590,7 @@ class Service:
         self.is_component_normal()
 
         # 开启子进程
-        stdout_queue = multiprocessing.Queue(maxsize=0)  # 子进程通过队列将标准输出重定向到父进程
-        stderr_queue = multiprocessing.Queue(maxsize=0)  # 子进程通过队列将标准输出重定向到父进程
+        stdio_queue = multiprocessing.Queue(maxsize=0)  # 子进程通过队列将标准 IO 重定向到父进程
         fn_lock = multiprocessing.Lock()  # 模型函数的锁
         fn_req_queue = multiprocessing.Queue(maxsize=0)  # 模型函数的请求队列
         fn_res_queue = multiprocessing.Queue(maxsize=0)  # 模型函数的响应队列
@@ -594,8 +598,7 @@ class Service:
 
         def create_fn_process():
             fn_process = multiprocessing.Process(target=self.launch,
-                                                 args=(stdout_queue,
-                                                       stderr_queue,
+                                                 args=(stdio_queue,
                                                        'FN',
                                                        fn_lock,
                                                        fn_req_queue,
@@ -606,8 +609,7 @@ class Service:
 
         def create_service_process():
             service_process = multiprocessing.Process(target=self.launch,
-                                                      args=(stdout_queue,
-                                                            stderr_queue,
+                                                      args=(stdio_queue,
                                                             'SERVICE',
                                                             fn_lock,
                                                             fn_req_queue,
@@ -619,8 +621,7 @@ class Service:
 
         def create_gradio_process():
             gradio_process = multiprocessing.Process(target=self.launch,
-                                                     args=(stdout_queue,
-                                                           stderr_queue,
+                                                     args=(stdio_queue,
                                                            'GRADIO',
                                                            fn_lock,
                                                            fn_req_queue,
@@ -631,7 +632,7 @@ class Service:
             return gradio_process
 
         def check_process_alive(process: multiprocessing.Process):
-            is_alive = process.is_alive
+            is_alive = process.is_alive()
             if not is_alive:
                 process.kill()
             return is_alive
@@ -644,6 +645,22 @@ class Service:
               f'[{self.algorithm_info.upper_name}] Waiting for service launched...')
 
         # 开启事件循环
+        async def alive_task():
+            nonlocal fn_process
+            nonlocal service_process
+            nonlocal gradio_process
+            while True:
+                await asyncio.sleep(1)
+                if not check_process_alive(fn_process):
+                    raise Exception('FN process is not alive')
+                    # fn_process = create_fn_process()
+                if not check_process_alive(service_process):
+                    raise Exception('Service process is not alive')
+                    # service_process = create_service_process()
+                if not check_process_alive(gradio_process):
+                    raise Exception('Gradio process is not alive')
+                    # gradio_process = create_gradio_process()
+
         async def heartbeat_task():
             times = 0
             while True:
@@ -659,53 +676,33 @@ class Service:
                     print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
                           f'[{self.algorithm_info.upper_name}] Heartbeat error:', str(e))
 
-        async def alive_task():
-            nonlocal fn_process
-            nonlocal service_process
-            nonlocal gradio_process
+        async def subprocess_stdio_task():
+            stdio_exec = QueueStdIOExec(stdio_queue).exec
             while True:
                 try:
-                    await asyncio.sleep(1)
-                    if not check_process_alive(fn_process):
-                        fn_process = create_fn_process()
-                    if not check_process_alive(service_process):
-                        service_process = create_service_process()
-                    if not check_process_alive(gradio_process):
-                        gradio_process = create_gradio_process()
+                    await asyncio.get_running_loop().run_in_executor(None, stdio_exec)
                 except Exception as e:
                     traceback.print_exc()
                     print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                          f'[{self.algorithm_info.upper_name}] Check process alive error:', str(e))
+                          f'[{self.algorithm_info.upper_name}] Handle subprocess stdio error:', str(e))
 
-        async def subprocess_stdout_task():
-            stdout_exec = QueueStdIOExec(sys.stdout, stdout_queue).exec
-            while True:
-                try:
-                    await asyncio.get_running_loop().run_in_executor(None, stdout_exec)
-                except Exception as e:
-                    traceback.print_exc()
-                    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                          f'[{self.algorithm_info.upper_name}] Handle subprocess stdout error:', str(e))
-
-        async def subprocess_stderr_task():
-            stderr_exec = QueueStdIOExec(sys.stderr, stderr_queue).exec
-            while True:
-                try:
-                    await asyncio.get_running_loop().run_in_executor(None, stderr_exec)
-                except Exception as e:
-                    traceback.print_exc()
-                    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                          f'[{self.algorithm_info.upper_name}] Handle subprocess stderr error:', str(e))
-
-        tasks = [heartbeat_task(), alive_task(), subprocess_stdout_task(), subprocess_stderr_task()]
-        await asyncio.wait(tasks)
+        # 当有任务抛出异常时，停止所有任务
+        tasks = [alive_task(), heartbeat_task(), subprocess_stdio_task()]
+        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
+        for task in pending:
+            task.cancel()
+        for task in done:
+            task.result()
 
 
 def run_service(config_path: str) -> None:
+    loop = asyncio.get_event_loop()
     try:
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Init.')
         service = Service(config_path)
-        asyncio.run(service.start())
+        loop.run_until_complete(service.start())
     except:
         traceback.print_exc()
-    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Exit.')
+    finally:
+        loop.close()
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Exit.')

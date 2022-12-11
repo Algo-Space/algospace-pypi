@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 20:19:06
 @LastEditors: Kermit
-@LastEditTime: 2022-12-06 14:41:44
+@LastEditTime: 2022-12-11 12:40:00
 '''
 
 import os
@@ -96,7 +96,7 @@ class ConfigLoader:
             raise ConfigError('ConfigError: \'service_filepath\' is not str.')
         if len(self.service_filepath) == 0:
             raise ConfigError('ConfigError: \'service_filepath\' is empty.')
-        if not os.path.exists(self.service_filepath):
+        if not os.path.exists(self._get_service_file_info()['service_filepath']):
             raise ConfigError(f'ConfigError: file \'{self.service_filepath}\' does not exist.')
 
         if type(self.service_function) != str:
@@ -164,7 +164,7 @@ class ConfigLoader:
         if self.is_self_gradio_launch:
             if type(self.gradio_launch_filepath) != str:
                 raise ConfigError('ConfigError: \'gradio_launch_filepath\' is not str.')
-            if not os.path.exists(self.gradio_launch_filepath):
+            if not os.path.exists(self._get_gradio_launch_file_info()['gradio_launch_filepath']):
                 raise ConfigError(f'ConfigError: file \'{self.gradio_launch_filepath}\' does not exist.')
             if type(self.gradio_launch_function) != str:
                 raise ConfigError('ConfigError: \'gradio_launch_function\' is not str.')
@@ -204,10 +204,12 @@ class ConfigLoader:
         service_path = os.path.join(self.config_dirpath, os.path.split(self.service_filepath)[0])
         service_filename = os.path.split(self.service_filepath)[1]
         service_filename_noext = os.path.splitext(service_filename)[0]
+        service_filepath = os.path.join(service_path, service_filename)
         return {
             'service_path': service_path,
             'service_filename': service_filename,
-            'service_filename_noext': service_filename_noext
+            'service_filename_noext': service_filename_noext,
+            'service_filepath': service_filepath,
         }
 
     def _is_document_file_exist(self) -> bool:
@@ -248,8 +250,10 @@ class ConfigLoader:
         gradio_launch_path = os.path.join(self.config_dirpath, os.path.split(self.gradio_launch_filepath)[0])
         gradio_launch_filename = os.path.split(self.gradio_launch_filepath)[1]
         gradio_launch_filename_noext = os.path.splitext(gradio_launch_filename)[0]
+        gradio_launch_filepath = os.path.join(gradio_launch_path, gradio_launch_filename)
         return {
             'gradio_launch_path': gradio_launch_path,
             'gradio_launch_filename': gradio_launch_filename,
-            'gradio_launch_filename_noext': gradio_launch_filename_noext
+            'gradio_launch_filename_noext': gradio_launch_filename_noext,
+            'gradio_launch_filepath': gradio_launch_filepath,
         }
