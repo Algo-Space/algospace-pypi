@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-12-06 12:14:16
+@LastEditTime: 2022-12-11 17:39:17
 '''
 
 from setuptools import setup, find_packages
@@ -27,7 +27,12 @@ setup(
     packages=find_packages(where='.', include=('algospace',)),
     platforms=["all"],
     url='https://github.com/Algo-Space/algospace-pypi',
+    project_urls={
+        'Documentation': 'https://vsource.club/publish',
+        'Homepage': 'https://vsource.club',
+    },
     install_requires=[
+        'setuptools>=3.0',
         'requests',
         'gradio>=3.0'
     ],
@@ -37,7 +42,14 @@ setup(
         'Operating System :: OS Independent',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3 :: Only',
         'Topic :: Software Development :: Libraries'
     ],
     include_package_data=True,

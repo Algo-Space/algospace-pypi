@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-12-11 15:59:59
+@LastEditTime: 2022-12-11 16:42:01
 '''
 
 from typing import Callable, Optional
@@ -29,7 +29,6 @@ import shutil
 import json
 import time
 import os
-import sys
 import re
 
 

@@ -2,7 +2,7 @@
 AlgoSpace: A platform for displaying algorithm achievements
 '''
 
-__version__ = 'v0.1.3'
+__version__ = 'v0.1.4'
 
 from algospace.__main__ import run
 from algospace.customer.service import login
