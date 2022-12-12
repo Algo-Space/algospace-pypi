@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-12-11 16:42:01
+@LastEditTime: 2022-12-12 21:11:29
 '''
 
 from typing import Callable, Optional
@@ -18,6 +18,7 @@ import multiprocessing
 from multiprocessing.synchronize import Lock
 from multiprocessing.connection import Connection
 import threading
+import concurrent.futures
 import socket
 import traceback
 import requests
@@ -38,16 +39,41 @@ class FnService:
     def __init__(self, algorithm_config: ConfigLoader) -> None:
         self.algorithm_config = algorithm_config
 
-    def launch(self, fn_req_queue: multiprocessing.Queue, fn_res_queue: multiprocessing.Queue) -> None:
-        ''' 启动函数服务 '''
-        self.algorithm_config.verify_service()  # 校验函数配置并附带将函数 import 入进程
+    def launch_thread(self, fn_index: int, fn_req_queue: multiprocessing.Queue, fn_res_queue: multiprocessing.Queue) -> None:
+        ''' 启动函数服务线程 '''
         while True:
             try:
                 args, kwargs = fn_req_queue.get()
+                print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                      f'[Fn Service] [{fn_index}] Begin to calculate')
                 out = self.algorithm_config.fn(*args, **kwargs)
+                print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                      f'[Fn Service] [{fn_index}] Complete.')
                 fn_res_queue.put((out, None))
             except Exception as e:
                 fn_res_queue.put((None, e))
+
+    def launch(self,
+               fn_req_queue_list: list[multiprocessing.Queue],
+               fn_res_queue_list: list[multiprocessing.Queue]) -> None:
+        ''' 启动函数服务 '''
+        self.algorithm_config.verify_service()  # 校验函数配置并附带将函数 import 入进程
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            pool.map(self.launch_thread,
+                     [i for i in range(len(fn_req_queue_list))],
+                     [fn_req_queue_list[i] for i in range(len(fn_req_queue_list))],
+                     [fn_res_queue_list[i] for i in range(len(fn_res_queue_list))])
+
+
+def get_available_fn_queue(
+        fn_lock_list: list[Lock],
+        fn_req_queue_list: list[multiprocessing.Queue],
+        fn_res_queue_list: list[multiprocessing.Queue]) -> tuple[Lock, multiprocessing.Queue, multiprocessing.Queue]:
+    ''' 获取当前可用的函数锁、函数队列 '''
+    for i in range(len(fn_lock_list)):
+        if fn_lock_list[i].acquire(block=False):
+            return fn_lock_list[i], fn_req_queue_list[i], fn_res_queue_list[i]
+    raise Exception('No available fn queue.')
 
 
 class ApiService:
@@ -60,7 +86,7 @@ class ApiService:
     def read_file(self, path: str) -> str:
         ''' 将 storage 返回的 path 转换为本地 path '''
         file_url = self.algorithm_info.storage_file_url + '/' + path
-        tmp_path = os.path.join(os.getcwd(), 'tmp')
+        tmp_path = self.algorithm_config.service_tmp_path
         dir_path = os.path.dirname(os.path.join(tmp_path, path))
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
@@ -135,18 +161,26 @@ class ApiService:
 
     def handle(self,
                input_info: dict,
-               fn_req_queue: multiprocessing.Queue,
-               fn_res_queue: multiprocessing.Queue) -> dict:
+               fn_lock_list: list[Lock],
+               fn_req_queue_list: list[multiprocessing.Queue],
+               fn_res_queue_list: list[multiprocessing.Queue]) -> dict:
         ''' 处理请求 '''
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Api Service] Begin to handle.')
         params = {}
         for key, info in self.algorithm_config.service_input.items():
             params[key] = self.get_input_type_class(info['type'])(input_info[key])
 
-        fn_req_queue.put(((), params))
-        out, e = fn_res_queue.get()
-        if e is not None:
-            raise e
+        fn_lock = None
+        try:
+            fn_lock, fn_req_queue, fn_res_queue = get_available_fn_queue(
+                fn_lock_list, fn_req_queue_list, fn_res_queue_list)
+            fn_req_queue.put(((), params))
+            out, e = fn_res_queue.get()
+            if e is not None:
+                raise e
+        finally:
+            if fn_lock is not None:
+                fn_lock.release()
 
         output_info = {}
         for key, info in self.algorithm_config.service_output.items():
@@ -192,31 +226,32 @@ class GradioService:
             return gr.Textbox(placeholder=describe)
 
     def launch(self,
-               fn_lock: Lock,
-               fn_req_queue: multiprocessing.Queue,
-               fn_res_queue: multiprocessing.Queue,
+               fn_lock_list: list[Lock],
+               fn_req_queue_list: list[multiprocessing.Queue],
+               fn_res_queue_list: list[multiprocessing.Queue],
                gradio_port_con: Connection) -> None:
         ''' 启动 Gradio 服务 '''
         def fn(*args):
-            try:
-                fn_lock.acquire()
-                kwargs = {}
-                for index, (key, _) in enumerate(self.algorithm_config.service_input.items()):
-                    kwargs[key] = args[index]
+            kwargs = {}
+            for index, (key, _) in enumerate(self.algorithm_config.service_input.items()):
+                kwargs[key] = args[index]
 
+            fn_lock = None
+            try:
+                fn_lock, fn_req_queue, fn_res_queue = get_available_fn_queue(
+                    fn_lock_list, fn_req_queue_list, fn_res_queue_list)
                 fn_req_queue.put(((), kwargs))
                 out, e = fn_res_queue.get()
                 if e is not None:
                     raise e
+            finally:
+                if fn_lock is not None:
+                    fn_lock.release()
 
-                fn_lock.release()
-                output_info = []
-                for key, _ in self.algorithm_config.service_output.items():
-                    output_info.append(out[key])
-                return output_info if len(output_info) > 1 else output_info[0]
-            except Exception:
-                fn_lock.release()
-                raise
+            output_info = []
+            for key, _ in self.algorithm_config.service_output.items():
+                output_info.append(out[key])
+            return output_info if len(output_info) > 1 else output_info[0]
 
         inputs = []
         for _, info in self.algorithm_config.service_input.items():
@@ -281,7 +316,7 @@ class GradioService:
         with GradioPrint():
             self.algorithm_config.gradio_launch_fn()  # 启动 Gradio 服务
 
-    def handle(self, input_info: dict) -> dict:
+    async def handle(self, input_info: dict) -> dict:
         ''' 处理请求 '''
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Gradio Service] Begin to handle.')
 
@@ -297,11 +332,11 @@ class GradioService:
 
         res = None
         if req_method == 'GET':
-            res = requests.get(url)
+            res = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.get(url))
         if req_method == 'POST' and req_headers['Content-Type'] == 'application/json':
-            res = requests.post(url, json=req_body, headers=req_headers)
+            res = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.post(url, json=req_body, headers=req_headers))
         if req_method == 'POST' and req_headers['Content-Type'] != 'application/json':
-            res = requests.post(url, data=req_body, headers=req_headers)
+            res = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.post(url, data=req_body, headers=req_headers))
 
         if res is not None:
             res_status_code = res.status_code
@@ -318,7 +353,7 @@ class GradioService:
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Gradio Service] Complete.')
         return result
 
-    def handle_init(self) -> dict:
+    async def handle_init(self) -> dict:
         ''' 处理 Gradio 初始化请求 '''
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Gradio Init] Begin to handle.')
 
@@ -328,7 +363,7 @@ class GradioService:
             shutil.copytree(gradio_frontend_path, './frontend')
             os.remove('./frontend/index.html')  # 删除未渲染的 index.html
 
-        def upload_file(bashpath: str, subpath: str):
+        async def upload_file(bashpath: str, subpath: str):
             ''' 递归上传文件夹里的文件 '''
             path = os.path.join(bashpath, subpath)
             if os.path.exists(os.path.join(path, '.DS_Store')):
@@ -336,24 +371,26 @@ class GradioService:
             for filename in os.listdir(path):
                 filepath = os.path.join(path, filename)
                 if os.path.isdir(filepath):
-                    upload_file(bashpath, os.path.join(subpath, filename))
+                    await upload_file(bashpath, os.path.join(subpath, filename))
                 else:
                     url = self.algorithm_info.gradio_upload_url + '/' + subpath + '/' + filename
                     file = open(filepath, 'r', encoding="UTF-8", errors='ignore')
-                    res = requests.post(url, files={'file': file}, headers=login_instance.get_header())
+                    res = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.post(url, files={'file': file}, headers=login_instance.get_header()))
                     file.close()
 
-        upload_file('./frontend', '.')  # 上传文件夹里的文件
+        await upload_file('./frontend', '.')  # 上传文件夹里的文件
 
         if not os.path.exists('./frontend/index.html'):
-            html_text = requests.get(
-                f'http://{self.algorithm_config.gradio_server_host}:{self.algorithm_config.gradio_server_port}').text
+            html_res = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.get(
+                f'http://{self.algorithm_config.gradio_server_host}:{self.algorithm_config.gradio_server_port}'))
+            html_text = html_res.text
             html_file = open('./frontend/index.html', 'w+', encoding="UTF-8", errors='ignore')
             html_file.write(html_text)
             html_file.close()
         url = self.algorithm_info.gradio_upload_url + '/index.html'
         file = open('./frontend/index.html', 'r', encoding="UTF-8", errors='ignore')
-        res = requests.post(url, files={'file': file}, headers=login_instance.get_header())  # 上传 index.html
+        # 上传 index.html
+        res = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.post(url, files={'file': file}, headers=login_instance.get_header()))
         file.close()
 
         shutil.rmtree('./frontend')  # 删除已上传的文件夹
@@ -379,10 +416,43 @@ class Service:
         self.api_service = ApiService(self.algorithm_config, self.algorithm_info)
         self.gradio_service = GradioService(self.algorithm_config, self.algorithm_info)
 
+    def launch(self,
+               stdio_queue: multiprocessing.Queue,
+               type: str,
+               fn_lock_list: list[Lock],
+               fn_req_queue_list: list[multiprocessing.Queue],
+               fn_res_queue_list: list[multiprocessing.Queue],
+               gradio_port_con: Optional[Connection] = None):
+        try:
+            QueueStdIO('stdout', stdio_queue)
+            QueueStdIO('stderr', stdio_queue)
+            if not self.login():
+                raise Exception('Login failed.')
+            if type == 'FN':
+                self.fn_service.launch(fn_req_queue_list, fn_res_queue_list)
+            elif type == 'SERVICE':
+                if not gradio_port_con:
+                    raise Exception('Argument \'gradio_port_con\' is None.')
+                self.launch_service(fn_lock_list, fn_req_queue_list, fn_res_queue_list, gradio_port_con)
+            elif type == 'GRADIO':
+                if not gradio_port_con:
+                    raise Exception('Argument \'gradio_port_con\' is None.')
+                if self.algorithm_config.is_self_gradio_launch:
+                    self.gradio_service.launch_self(gradio_port_con)
+                else:
+                    self.gradio_service.launch(fn_lock_list, fn_req_queue_list, fn_res_queue_list, gradio_port_con)
+            else:
+                raise Exception('Argument "type" is unaccessable.')
+        except Exception as e:
+            traceback.print_exc()
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                  f'[{self.algorithm_info.upper_name}] Launch {type} error:', str(e))
+            exit(1)
+
     def launch_service(self,
-                       fn_lock: Lock,
-                       fn_req_queue: multiprocessing.Queue,
-                       fn_res_queue: multiprocessing.Queue,
+                       fn_lock_list: list[Lock],
+                       fn_req_queue_list: list[multiprocessing.Queue],
+                       fn_res_queue_list: list[multiprocessing.Queue],
                        gradio_port_con: Connection):
         # 从管道接受 Gradio 运行成功的端口
         gradio_port = int(gradio_port_con.recv())
@@ -393,131 +463,123 @@ class Service:
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}] [Service] Your algorithm site: {self.algorithm_info.algorithm_site}')
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}] [Service] Start handling...')
         print('')
-        while True:
-            try:
-                # 轮询一条请求消息
-                ask_for_data_resp = requests.get(self.algorithm_info.ask_data_url, headers=login_instance.get_header())
-                if ask_for_data_resp.status_code != 200 and ask_for_data_resp.status_code != 201:
-                    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                          '[Service] Ask data error:', ask_for_data_resp.status_code,
-                          ask_for_data_resp.content.decode())
-                    continue
-                ask_for_data_dict = ask_for_data_resp.json()
-                if ask_for_data_dict['status'] == 201:
-                    # 没有新的请求信息
-                    time.sleep(config.call_interval)
-                    continue
-                if ask_for_data_dict['status'] != 200:
-                    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                          '[Service] Ask data error: the response', ask_for_data_dict)
-                    continue
-                req_info = ask_for_data_dict.get('data', {})
-                if type(req_info) != dict:
-                    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                          '[Service] Ask data error: the property of \'data\' is not dict.')
-                    continue
-                req_info = req_info.get('req_info', {})
-                if type(req_info) != dict:
-                    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                          '[Service] Ask data error: the property of \'req_info\' is not dict.')
-                    continue
 
+        async def start():
+            parallel = {
+                'max': self.algorithm_config.service_max_parallel,
+                'curr': 0,
+            }
+            loop = asyncio.get_event_loop()
+            while True:
+                while parallel['curr'] >= parallel['max']:
+                    # 并行数达到上限，等待
+                    await asyncio.sleep(config.call_interval)
+
+                # 请求消息
                 try:
-                    # 根据请求类型处理
-                    if req_info['type'] == 'api':
-                        # 处理计算请求
-                        try:
-                            fn_lock.acquire()
-                            result = self.api_service.handle(req_info['data'], fn_req_queue, fn_res_queue)
-                            fn_lock.release()
-                        except:
-                            fn_lock.release()
-                            raise
-                    elif req_info['type'] == 'gradio':
-                        # 处理 Gradio 请求
-                        result = self.gradio_service.handle(req_info['data'])
-                    elif req_info['type'] == 'gradio_init':
-                        # 处理 Gradio 初始化请求
-                        result = self.gradio_service.handle_init()
-                    else:
-                        result = {}
-
-                    # 回传数据
-                    res_info = {
-                        'id': req_info['id'],
-                        'type': req_info['type'],
-                        'status': 'finished',
-                        'owner': req_info['owner'],
-                        'create_date': req_info['create_date'],
-                        'result': result
-                    }
-                    return_ans_param = {'res_info': res_info}
-                    return_ans_resp = requests.post(self.algorithm_info.return_ans_url,
-                                                    json=return_ans_param, headers=login_instance.get_header())
-
-                    if return_ans_resp.status_code != 200 and return_ans_resp.status_code != 201 and return_ans_resp.json()['status'] != 200:
-                        err_msg = "Service Result Return Error."
-                        raise Exception(err_msg)
-                    else:
-                        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                              '[Service] Return ans success.')
+                    req_info = await self.ask_data()
+                    if req_info is None:
+                        await asyncio.sleep(config.call_interval)
+                        continue
                 except Exception as e:
                     traceback.print_exc()
-                    # 回传失败数据
-                    res_info = {
-                        'id': req_info['id'],
-                        'type': req_info['type'],
-                        'status': 'error',
-                        'owner': req_info['owner'],
-                        'create_date': req_info['create_date'],
-                        'result': {'err_msg': str(e)}
-                    }
-                    return_error_param = {'res_info': res_info}
-                    requests.post(self.algorithm_info.return_err_url, json=return_error_param,
-                                  headers=login_instance.get_header())
                     print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                          '[Service] Return error ans success.')
+                          '[Service] Ask data error:', str(e))
+                    await asyncio.sleep(config.call_interval)
+                    continue
 
-                if os.path.exists('tmp'):
-                    shutil.rmtree('tmp')
+                # 处理请求
+                try:
+                    loop.create_task(self.handle(req_info, fn_lock_list,
+                                     fn_req_queue_list, fn_res_queue_list, parallel))
+                except Exception as e:
+                    traceback.print_exc()
+                    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                          '[Service] Create handle task error:', str(e))
+                    await asyncio.sleep(config.call_interval)
+
+        asyncio.run(start())
+
+    async def ask_data(self):
+        ask_for_data_resp = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.get(self.algorithm_info.ask_data_url, headers=login_instance.get_header()))
+        if ask_for_data_resp.status_code != 200 and ask_for_data_resp.status_code != 201:
+            raise Exception(ask_for_data_resp.status_code, ask_for_data_resp.content.decode())
+        ask_for_data_dict = ask_for_data_resp.json()
+        if ask_for_data_dict['status'] == 201:
+            # 没有新的请求信息
+            return
+        if ask_for_data_dict['status'] != 200:
+            raise Exception('the response', ask_for_data_dict)
+        req_info = ask_for_data_dict.get('data', {})
+        if type(req_info) != dict:
+            raise Exception('the property of \'data\' is not dict.')
+        req_info = req_info.get('req_info', {})
+        if type(req_info) != dict:
+            raise Exception('the property of \'req_info\' is not dict.')
+        return req_info
+
+    async def handle(self,
+                     req_info: dict,
+                     fn_lock_list: list[Lock],
+                     fn_req_queue_list: list[multiprocessing.Queue],
+                     fn_res_queue_list: list[multiprocessing.Queue],
+                     parallel: dict):
+        try:
+            parallel['curr'] += 1
+            try:
+                # 根据请求类型处理
+                if req_info['type'] == 'api':
+                    # 处理计算请求
+                    result = await asyncio.get_event_loop().run_in_executor(None, lambda: self.api_service.handle(req_info['data'], fn_lock_list, fn_req_queue_list, fn_res_queue_list))
+                elif req_info['type'] == 'gradio':
+                    # 处理 Gradio 请求
+                    result = await self.gradio_service.handle(req_info['data'])
+                elif req_info['type'] == 'gradio_init':
+                    # 处理 Gradio 初始化请求
+                    result = await self.gradio_service.handle_init()  # TODO: 初始化时要阻塞
+                else:
+                    result = {}
+
+                # 回传数据
+                res_info = {
+                    'id': req_info['id'],
+                    'type': req_info['type'],
+                    'status': 'finished',
+                    'owner': req_info['owner'],
+                    'create_date': req_info['create_date'],
+                    'result': result
+                }
+                return_ans_param = {'res_info': res_info}
+                return_ans_resp = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.post(self.algorithm_info.return_ans_url,
+                                                                                                             json=return_ans_param, headers=login_instance.get_header()))
+
+                if return_ans_resp.status_code != 200 and return_ans_resp.status_code != 201 and return_ans_resp.json()['status'] != 200:
+                    err_msg = "Service Result Return Error."
+                    raise Exception(err_msg)
+                else:
+                    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                          '[Service] Return ans success.')
             except Exception as e:
                 traceback.print_exc()
-                print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Service] Handle error:', str(e))
-                time.sleep(config.call_interval)
-                continue
-
-    def launch(self,
-               stdio_queue: multiprocessing.Queue,
-               type: str,
-               fn_lock: Lock,
-               fn_req_queue: multiprocessing.Queue,
-               fn_res_queue: multiprocessing.Queue,
-               gradio_port_con: Optional[Connection] = None):
-        try:
-            QueueStdIO('stdout', stdio_queue)
-            QueueStdIO('stderr', stdio_queue)
-            if not self.login():
-                raise Exception('Login failed.')
-            if type == 'FN':
-                self.fn_service.launch(fn_req_queue, fn_res_queue)
-            elif type == 'SERVICE':
-                if not gradio_port_con:
-                    raise Exception('Argument \'gradio_port_con\' is None.')
-                self.launch_service(fn_lock, fn_req_queue, fn_res_queue, gradio_port_con)
-            elif type == 'GRADIO':
-                if not gradio_port_con:
-                    raise Exception('Argument \'gradio_port_con\' is None.')
-                if self.algorithm_config.is_self_gradio_launch:
-                    self.gradio_service.launch_self(gradio_port_con)
-                else:
-                    self.gradio_service.launch(fn_lock, fn_req_queue, fn_res_queue, gradio_port_con)
-            else:
-                raise Exception('Argument "type" is unaccessable.')
+                # 回传失败数据
+                res_info = {
+                    'id': req_info['id'],
+                    'type': req_info['type'],
+                    'status': 'error',
+                    'owner': req_info['owner'],
+                    'create_date': req_info['create_date'],
+                    'result': {'err_msg': str(e)}
+                }
+                return_error_param = {'res_info': res_info}
+                await asyncio.get_event_loop().run_in_executor(None, lambda: requests.post(self.algorithm_info.return_err_url, json=return_error_param,
+                                                                                           headers=login_instance.get_header()))
+                print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                      '[Service] Return error ans success.')
         except Exception as e:
             traceback.print_exc()
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  f'[{self.algorithm_info.upper_name}] Launch {type} error:', str(e))
-            exit(1)
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Service] Handle error:', str(e))
+        finally:
+            parallel['curr'] -= 1
 
     def login(self):
         if not login(self.algorithm_config.username, self.algorithm_config.password):
@@ -592,18 +654,21 @@ class Service:
 
         # 开启子进程
         stdio_queue = multiprocessing.Queue(maxsize=0)  # 子进程通过队列将标准 IO 重定向到父进程
-        fn_lock = multiprocessing.Lock()  # 模型函数的锁
-        fn_req_queue = multiprocessing.Queue(maxsize=0)  # 模型函数的请求队列
-        fn_res_queue = multiprocessing.Queue(maxsize=0)  # 模型函数的响应队列
+        fn_lock_list = [multiprocessing.Lock() for _ in range(
+            self.algorithm_config.service_max_parallel)]  # 模型函数的锁列表
+        fn_req_queue_list = [multiprocessing.Queue(maxsize=0) for _ in range(
+            self.algorithm_config.service_max_parallel)]  # 模型函数的请求队列列表
+        fn_res_queue_list = [multiprocessing.Queue(maxsize=0) for _ in range(
+            self.algorithm_config.service_max_parallel)]  # 模型函数的响应队列列表
         gradio_port_con1, gradio_port_con2 = multiprocessing.Pipe()  # 传递 Gradio 端口的管道
 
         def create_fn_process():
             fn_process = multiprocessing.Process(target=self.launch,
                                                  args=(stdio_queue,
                                                        'FN',
-                                                       fn_lock,
-                                                       fn_req_queue,
-                                                       fn_res_queue),
+                                                       fn_lock_list,
+                                                       fn_req_queue_list,
+                                                       fn_res_queue_list),
                                                  daemon=True)
             fn_process.start()
             return fn_process
@@ -612,9 +677,9 @@ class Service:
             service_process = multiprocessing.Process(target=self.launch,
                                                       args=(stdio_queue,
                                                             'SERVICE',
-                                                            fn_lock,
-                                                            fn_req_queue,
-                                                            fn_res_queue,
+                                                            fn_lock_list,
+                                                            fn_req_queue_list,
+                                                            fn_res_queue_list,
                                                             gradio_port_con2),
                                                       daemon=True)
             service_process.start()
@@ -624,9 +689,9 @@ class Service:
             gradio_process = multiprocessing.Process(target=self.launch,
                                                      args=(stdio_queue,
                                                            'GRADIO',
-                                                           fn_lock,
-                                                           fn_req_queue,
-                                                           fn_res_queue,
+                                                           fn_lock_list,
+                                                           fn_req_queue_list,
+                                                           fn_res_queue_list,
                                                            gradio_port_con1),
                                                      daemon=True)
             gradio_process.start()

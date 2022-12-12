@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 20:19:06
 @LastEditors: Kermit
-@LastEditTime: 2022-12-11 12:40:00
+@LastEditTime: 2022-12-12 18:42:35
 '''
 
 import os
@@ -41,6 +41,9 @@ class ConfigLoader:
         self.service_function: str = getattr(config, 'service_function', '')
         self.service_input: dict = getattr(config, 'service_input')
         self.service_output: dict = getattr(config, 'service_output')
+        self.service_max_parallel: int = int(getattr(config, 'service_max_parallel', 1))
+        self.service_timeout: float = float(getattr(config, 'service_timeout', 60))
+        self.service_tmp_dir: str = getattr(config, 'service_tmp_dir', '/tmp')
 
         self.description: str = getattr(config, 'description', '')
         self.scope: str = getattr(config, 'scope', 'PRIVATE')
@@ -134,6 +137,19 @@ class ConfigLoader:
                     f'ConfigError: type of \'{str(key)}\' in \'service_output\' is not in {str(valid_param_type)}.')
             info['describe'] = str(info.get('describe', ''))
 
+        if type(self.service_max_parallel) != int:
+            raise ConfigError('ConfigError: \'service_max_parallel\' is not int.')
+        if self.service_max_parallel <= 0:
+            raise ConfigError('ConfigError: \'service_max_parallel\' is less than 0.')
+
+        if type(self.service_timeout) != float:
+            raise ConfigError('ConfigError: \'service_timeout\' is not float.')
+        if self.service_timeout <= 0:
+            raise ConfigError('ConfigError: \'service_timeout\' is less than 0.')
+
+        if type(self.service_tmp_dir) != str:
+            raise ConfigError('ConfigError: \'service_tmp_dir\' is not str.')
+
         if type(self.description) != str:
             raise ConfigError('ConfigError: \'description\' is not str.')
         if type(self.scope) != str:
@@ -211,6 +227,10 @@ class ConfigLoader:
             'service_filename_noext': service_filename_noext,
             'service_filepath': service_filepath,
         }
+
+    @property
+    def service_tmp_path(self) -> str:
+        return os.path.join(self.config_dirpath, self.service_tmp_dir)
 
     def _is_document_file_exist(self) -> bool:
         document_filepath = os.path.join(self.config_dirpath, self.document_filepath)

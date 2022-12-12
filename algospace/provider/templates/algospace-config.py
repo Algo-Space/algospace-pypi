@@ -16,6 +16,9 @@
 #       - .{arg}:           参数名
 #       - .{arg}.type:      参数类型，包含: str (字符串), int (定点数), float (浮点数), image_path (图片本地路径), video_path (视频本地路径), voice_path (音频本地路径)
 #       - .{arg}.describe:  参数简要描述
+#   - service_timeout:      算法服务超时时间，单位: 秒
+#   - service_max_parallel: 算法服务最大同时处理请求数；若大于 1，则需要保证算法服务函数处理时的线程安全，否则请通过多实例部署算法
+#   - service_tmp_dir:      算法服务临时文件存放文件夹的路径，相对于本文件路径，用于函数输入参数包含 image_path, video_path, voice_path 时存放临时文件
 #
 # 参数配置填写示例:
 #   示例函数:
@@ -63,10 +66,13 @@ service_output = {
         'describe': ''
     }
 }
+service_timeout = 60
+service_max_parallel = 1
+service_tmp_dir = './tmp'
 
 ############################
 # 算法详情选项，可在网页端进行修改:
-#   - description:          描述算法的简介，简要介绍算法的要点
+#   - description:          描述算法的简介，简要介绍算法的要点，可选格式：纯文本、HTML
 #   - scope:                算法可见范围，可选值：PRIVATE（自己可见）、GROUP（小组内可见）、INSTITUTION（机构内可见）、PUBLIC（公开）
 #   - chinese_name:         中文名，将与算法名一同向用户展示
 #   - document_filepath:    文档文件路径，详细介绍算法的要点，可选格式：纯文本、Markdown、HTML，相对于本文件路径，如：'./README.md'
