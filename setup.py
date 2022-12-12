@@ -5,15 +5,19 @@
 @Author: Kermit
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-12-12 14:10:03
+@LastEditTime: 2022-12-12 14:46:48
 '''
 
-import pkgutil
 from setuptools import setup, find_packages
+from os import path
+
+name = 'algospace'
+with open(path.join(name, 'version.txt'), 'r') as f:
+    version = f.read().strip()
 
 setup(
-    name='algospace',
-    version=pkgutil.get_data('algospace', 'version.txt').decode('ascii').strip(),  # type: ignore
+    name=name,
+    version=version,
     description=(
         'AlgoSpace: A platform for displaying algorithm achievements'
     ),
@@ -24,7 +28,7 @@ setup(
     maintainer='DBIIR',
     maintainer_email='ckeming@outlook.com',
     license='BSD License',
-    packages=find_packages(where='.', include=('algospace',)),
+    packages=find_packages(where='.', include=(name,)),
     platforms=["all"],
     url='https://github.com/Algo-Space/algospace-pypi',
     project_urls={
