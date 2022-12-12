@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-12-12 21:11:29
+@LastEditTime: 2022-12-12 21:52:28
 '''
 
 from typing import Callable, Optional
@@ -39,6 +39,12 @@ class FnService:
     def __init__(self, algorithm_config: ConfigLoader) -> None:
         self.algorithm_config = algorithm_config
 
+    async def handle(self, *args, **kwargs):
+        ''' 处理函数请求 '''
+        future = asyncio.get_event_loop().run_in_executor(None, lambda: self.algorithm_config.fn(*args, **kwargs))
+        out = await asyncio.wait_for(future, timeout=self.algorithm_config.service_timeout)
+        return out
+
     def launch_thread(self, fn_index: int, fn_req_queue: multiprocessing.Queue, fn_res_queue: multiprocessing.Queue) -> None:
         ''' 启动函数服务线程 '''
         while True:
@@ -46,7 +52,7 @@ class FnService:
                 args, kwargs = fn_req_queue.get()
                 print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
                       f'[Fn Service] [{fn_index}] Begin to calculate')
-                out = self.algorithm_config.fn(*args, **kwargs)
+                out = asyncio.run(self.handle(*args, **kwargs))
                 print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
                       f'[Fn Service] [{fn_index}] Complete.')
                 fn_res_queue.put((out, None))
