@@ -2,7 +2,7 @@
 AlgoSpace: A platform for displaying algorithm achievements
 '''
 
-__version__ = 'v0.1.4'
+import pkgutil
 
 from algospace.__main__ import run
 from algospace.customer.service import login
@@ -15,3 +15,6 @@ from algospace.customer.service import clear_storage
 
 def __getattr__(algorithm_name: str):
     return fn(algorithm_name)
+
+
+__version__ = pkgutil.get_data(__name__, 'version.txt').decode('ascii').strip()  # type: ignore

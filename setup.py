@@ -5,15 +5,15 @@
 @Author: Kermit
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-12-11 17:39:17
+@LastEditTime: 2022-12-12 14:10:03
 '''
 
+import pkgutil
 from setuptools import setup, find_packages
-from algospace import __version__
 
 setup(
     name='algospace',
-    version=__version__,
+    version=pkgutil.get_data('algospace', 'version.txt').decode('ascii').strip(),  # type: ignore
     description=(
         'AlgoSpace: A platform for displaying algorithm achievements'
     ),
