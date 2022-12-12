@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-12-12 21:52:28
+@LastEditTime: 2022-12-12 22:42:10
 '''
 
 from typing import Callable, Optional
@@ -479,30 +479,31 @@ class Service:
             while True:
                 while parallel['curr'] >= parallel['max']:
                     # 并行数达到上限，等待
-                    await asyncio.sleep(config.call_interval)
+                    await asyncio.sleep(config.wait_interval)
 
                 # 请求消息
                 try:
                     req_info = await self.ask_data()
                     if req_info is None:
-                        await asyncio.sleep(config.call_interval)
+                        await asyncio.sleep(config.wait_interval)
                         continue
                 except Exception as e:
                     traceback.print_exc()
                     print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
                           '[Service] Ask data error:', str(e))
-                    await asyncio.sleep(config.call_interval)
+                    await asyncio.sleep(config.wait_interval)
                     continue
 
                 # 处理请求
                 try:
                     loop.create_task(self.handle(req_info, fn_lock_list,
                                      fn_req_queue_list, fn_res_queue_list, parallel))
+                    await asyncio.sleep(config.call_interval)
                 except Exception as e:
                     traceback.print_exc()
                     print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
                           '[Service] Create handle task error:', str(e))
-                    await asyncio.sleep(config.call_interval)
+                    await asyncio.sleep(config.wait_interval)
 
         asyncio.run(start())
 
@@ -542,7 +543,11 @@ class Service:
                     result = await self.gradio_service.handle(req_info['data'])
                 elif req_info['type'] == 'gradio_init':
                     # 处理 Gradio 初始化请求
-                    result = await self.gradio_service.handle_init()  # TODO: 初始化时要阻塞
+                    try:
+                        parallel['curr'] += parallel['max']  # 初始化时要阻塞所有并行请求
+                        result = await self.gradio_service.handle_init()
+                    finally:
+                        parallel['curr'] -= parallel['max']
                 else:
                     result = {}
 

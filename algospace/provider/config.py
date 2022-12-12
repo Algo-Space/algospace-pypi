@@ -5,14 +5,11 @@
 @Author: Kermit
 @Date: 2022-10-24 14:45:40
 @LastEditors: Kermit
-@LastEditTime: 2022-12-05 17:51:02
+@LastEditTime: 2022-12-12 22:49:30
 '''
 
-import os
-
-
-call_interval = 1
-sleep_interval = 7
+wait_interval = 1
+call_interval = 0.1
 
 
 enroll_url = 'https://vsource.club/core/algo/pypi/enroll'
