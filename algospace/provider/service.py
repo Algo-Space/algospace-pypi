@@ -5,10 +5,10 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-12-12 22:42:10
+@LastEditTime: 2022-12-13 13:09:24
 '''
 
-from typing import Callable, Optional
+from typing import Callable, Optional, List, Tuple
 from . import config
 from .config import Algoinfo
 import urllib.request
@@ -60,8 +60,8 @@ class FnService:
                 fn_res_queue.put((None, e))
 
     def launch(self,
-               fn_req_queue_list: list[multiprocessing.Queue],
-               fn_res_queue_list: list[multiprocessing.Queue]) -> None:
+               fn_req_queue_list: List[multiprocessing.Queue],
+               fn_res_queue_list: List[multiprocessing.Queue]) -> None:
         ''' 启动函数服务 '''
         self.algorithm_config.verify_service()  # 校验函数配置并附带将函数 import 入进程
         with concurrent.futures.ThreadPoolExecutor() as pool:
@@ -72,9 +72,9 @@ class FnService:
 
 
 def get_available_fn_queue(
-        fn_lock_list: list[Lock],
-        fn_req_queue_list: list[multiprocessing.Queue],
-        fn_res_queue_list: list[multiprocessing.Queue]) -> tuple[Lock, multiprocessing.Queue, multiprocessing.Queue]:
+        fn_lock_list: List[Lock],
+        fn_req_queue_list: List[multiprocessing.Queue],
+        fn_res_queue_list: List[multiprocessing.Queue]) -> Tuple[Lock, multiprocessing.Queue, multiprocessing.Queue]:
     ''' 获取当前可用的函数锁、函数队列 '''
     for i in range(len(fn_lock_list)):
         if fn_lock_list[i].acquire(block=False):
@@ -167,9 +167,9 @@ class ApiService:
 
     def handle(self,
                input_info: dict,
-               fn_lock_list: list[Lock],
-               fn_req_queue_list: list[multiprocessing.Queue],
-               fn_res_queue_list: list[multiprocessing.Queue]) -> dict:
+               fn_lock_list: List[Lock],
+               fn_req_queue_list: List[multiprocessing.Queue],
+               fn_res_queue_list: List[multiprocessing.Queue]) -> dict:
         ''' 处理请求 '''
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Api Service] Begin to handle.')
         params = {}
@@ -232,9 +232,9 @@ class GradioService:
             return gr.Textbox(placeholder=describe)
 
     def launch(self,
-               fn_lock_list: list[Lock],
-               fn_req_queue_list: list[multiprocessing.Queue],
-               fn_res_queue_list: list[multiprocessing.Queue],
+               fn_lock_list: List[Lock],
+               fn_req_queue_list: List[multiprocessing.Queue],
+               fn_res_queue_list: List[multiprocessing.Queue],
                gradio_port_con: Connection) -> None:
         ''' 启动 Gradio 服务 '''
         def fn(*args):
@@ -425,9 +425,9 @@ class Service:
     def launch(self,
                stdio_queue: multiprocessing.Queue,
                type: str,
-               fn_lock_list: list[Lock],
-               fn_req_queue_list: list[multiprocessing.Queue],
-               fn_res_queue_list: list[multiprocessing.Queue],
+               fn_lock_list: List[Lock],
+               fn_req_queue_list: List[multiprocessing.Queue],
+               fn_res_queue_list: List[multiprocessing.Queue],
                gradio_port_con: Optional[Connection] = None):
         try:
             QueueStdIO('stdout', stdio_queue)
@@ -456,9 +456,9 @@ class Service:
             exit(1)
 
     def launch_service(self,
-                       fn_lock_list: list[Lock],
-                       fn_req_queue_list: list[multiprocessing.Queue],
-                       fn_res_queue_list: list[multiprocessing.Queue],
+                       fn_lock_list: List[Lock],
+                       fn_req_queue_list: List[multiprocessing.Queue],
+                       fn_res_queue_list: List[multiprocessing.Queue],
                        gradio_port_con: Connection):
         # 从管道接受 Gradio 运行成功的端口
         gradio_port = int(gradio_port_con.recv())
@@ -527,9 +527,9 @@ class Service:
 
     async def handle(self,
                      req_info: dict,
-                     fn_lock_list: list[Lock],
-                     fn_req_queue_list: list[multiprocessing.Queue],
-                     fn_res_queue_list: list[multiprocessing.Queue],
+                     fn_lock_list: List[Lock],
+                     fn_req_queue_list: List[multiprocessing.Queue],
+                     fn_res_queue_list: List[multiprocessing.Queue],
                      parallel: dict):
         try:
             parallel['curr'] += 1
