@@ -32,8 +32,8 @@ setup(
     platforms=["all"],
     url='https://github.com/Algo-Space/algospace-pypi',
     project_urls={
-        'Documentation': 'https://vsource.club/publish',
-        'Homepage': 'https://vsource.club',
+        'Documentation': 'https://algospace.top/publish',
+        'Homepage': 'https://algospace.top',
     },
     install_requires=[
         'setuptools>=3.0',

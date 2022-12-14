@@ -12,5 +12,5 @@
 interval = 0.3
 call_timeout = 30
 
-algo_info_url = 'https://vsource.club/core/algo/pypi/info'
-storage_file_url = 'https://vsource.club/core/storage/file'
+algo_info_url = 'https://algospace.top/core/algo/pypi/info'
+storage_file_url = 'https://algospace.top/core/storage/file'

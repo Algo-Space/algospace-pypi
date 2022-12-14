@@ -5,16 +5,16 @@
 @Author: Kermit
 @Date: 2022-10-24 14:45:40
 @LastEditors: Kermit
-@LastEditTime: 2022-12-12 22:49:30
+@LastEditTime: 2022-12-14 18:32:27
 '''
 
 wait_interval = 1
 call_interval = 0.1
 
 
-enroll_url = 'https://vsource.club/core/algo/pypi/enroll'
-verify_config_url = 'https://vsource.club/core/algo/pypi/verify'
-is_component_normal_url = 'https://vsource.club/core/algo/pypi/is_component_normal'
+enroll_url = 'https://algospace.top/core/algo/pypi/enroll'
+verify_config_url = 'https://algospace.top/core/algo/pypi/verify'
+is_component_normal_url = 'https://algospace.top/core/algo/pypi/is_component_normal'
 
 
 class Algoinfo:
@@ -44,32 +44,32 @@ class Algoinfo:
 
     @property
     def heartbeat_url(self):
-        return 'https://vsource.club/core/heartbeat/send'
+        return 'https://algospace.top/core/heartbeat/send'
 
     @property
     def ask_data_url(self):
-        return f'https://vsource.club/algo/{self.lower_name}/service/ask_data'
+        return f'https://algospace.top/algo/{self.lower_name}/service/ask_data'
 
     @property
     def return_ans_url(self):
-        return f'https://vsource.club/algo/{self.lower_name}/service/return_ans'
+        return f'https://algospace.top/algo/{self.lower_name}/service/return_ans'
 
     @property
     def return_err_url(self):
-        return f'https://vsource.club/algo/{self.lower_name}/service/error_ans'
+        return f'https://algospace.top/algo/{self.lower_name}/service/error_ans'
 
     @property
     def gradio_upload_url(self):
-        return f'https://vsource.club/algo/{self.lower_name}/gradio_worker/upload'
+        return f'https://algospace.top/algo/{self.lower_name}/gradio_worker/upload'
 
     @property
     def storage_file_url(self):
-        return 'https://vsource.club/core/storage/file'
+        return 'https://algospace.top/core/storage/file'
 
     @property
     def gradio_page(self):
-        return f'https://vsource.club/algo/{self.lower_name}/gradio/'
+        return f'https://algospace.top/algo/{self.lower_name}/gradio/'
 
     @property
     def algorithm_site(self):
-        return f'https://vsource.club/algorithm/{self.name}/{self.version}'
+        return f'https://algospace.top/algorithm/{self.name}/{self.version}'

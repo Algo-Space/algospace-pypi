@@ -8,4 +8,4 @@
 @LastEditTime: 2022-11-11 19:45:41
 '''
 
-login_url = 'https://vsource.club/core/auth/login'
+login_url = 'https://algospace.top/core/auth/login'
