@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-12-13 16:47:16
+@LastEditTime: 2022-12-20 18:31:14
 '''
 
 from argparse import ArgumentParser
@@ -35,7 +35,7 @@ def run():
     start_parser.add_argument('-c', '--config', dest=ArgNamespace.config_path, metavar='<path>', type=str, required=False,
                               default='algospace-config.py', help='algospace-config.py 配置文件路径')  # ArgNamespace.config_path
     start_parser.add_argument('-r', '--remote', dest=ArgNamespace.enroll_remote, required=False,
-                               action='store_true', default=False, help='部署在 AlgoSpace')  # ArgNamespace.enroll_remote
+                              action='store_true', default=False, help='部署在 AlgoSpace')  # ArgNamespace.enroll_remote
     # generate 命令参数
     generate_parser.add_argument('-c', '--config', dest=ArgNamespace.config_path, metavar='<path>', type=str, required=False,
                                  default='algospace-config.py', help='algospace-config.py 配置文件路径')  # ArgNamespace.config_path
@@ -58,10 +58,10 @@ def run():
     elif args.command == 'start':
         if args.enroll_remote is True:
             from algospace.provider.enroll import enroll_from_config
-            from algospace.provider.remote import upload_local_file_as_zip
+            from algospace.provider.remote import upload_local_file_as_zip, start_build_image
             enroll_from_config(args.config_path)
-            upload_local_file_as_zip()
-            # TODO: 发起构建
+            upload_local_file_as_zip(args.config_path)
+            start_build_image(args.config_path)
         else:
             from algospace.provider.service import run_service
             run_service(args.config_path)
