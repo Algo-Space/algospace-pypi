@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-11 13:21:18
 @LastEditors: Kermit
-@LastEditTime: 2022-12-05 20:44:59
+@LastEditTime: 2022-12-21 16:49:45
 '''
 
 import traceback
@@ -31,6 +31,7 @@ def generate_docker_config(config_path: str):
     except Exception as e:
         traceback.print_exc()
         print('[AlgoSpace] Generate error:', str(e))
+        exit(1)
 
 
 def gen_requirements_txt(requirements: list[str]):

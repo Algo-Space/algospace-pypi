@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-11-28 12:33:49
+@LastEditTime: 2022-12-21 16:49:30
 '''
 
 from .config import enroll_url, verify_config_url, is_component_normal_url
@@ -33,6 +33,7 @@ def enroll_from_config(config_path: str):
     except Exception as e:
         traceback.print_exc()
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Enroll error:', str(e))
+        exit(1)
 
 
 def enroll(name: str, version: str, input: dict, output: dict, description: str, scope: str, chinese_name: str, document: str, config_file: str):

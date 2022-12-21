@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-12-12 14:46:48
+@LastEditTime: 2022-12-21 15:32:49
 '''
 
 from setuptools import setup, find_packages
@@ -38,6 +38,7 @@ setup(
     install_requires=[
         'setuptools>=3.0',
         'requests',
+        'websocket-client',
         'gradio>=3.0'
     ],
     python_requires='>=3.7',

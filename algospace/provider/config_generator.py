@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-07 17:30:04
 @LastEditors: Kermit
-@LastEditTime: 2022-12-03 21:09:03
+@LastEditTime: 2022-12-21 16:49:55
 '''
 
 import os
@@ -27,3 +27,4 @@ def generate_config():
     except Exception as e:
         traceback.print_exc()
         print('[AlgoSpace] Init error:', str(e))
+        exit(1)

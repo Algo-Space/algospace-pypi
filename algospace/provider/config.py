@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-24 14:45:40
 @LastEditors: Kermit
-@LastEditTime: 2022-12-20 18:27:12
+@LastEditTime: 2022-12-21 13:32:48
 '''
 
 wait_interval = 1
@@ -81,3 +81,7 @@ class Algoinfo:
     @property
     def start_build_url(self):
         return 'https://algospace.top/core/algo/builder/start'
+
+    @property
+    def get_build_ws_url(self):
+        return 'wss://algospace.top/core/algo/builder/ws/log'
