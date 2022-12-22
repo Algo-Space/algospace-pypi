@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-12-13 16:19:45
 @LastEditors: Kermit
-@LastEditTime: 2022-12-21 16:48:20
+@LastEditTime: 2022-12-22 17:05:39
 '''
 
 import traceback
@@ -87,6 +87,49 @@ def get_build_log(config_path: str):
     last_log_row_num = 0
 
     ws = create_connection(algorithm_info.get_build_ws_url, header=login_instance.get_header())
+    ws.send(json.dumps({
+        'algoname': algorithm_config.name,
+        'version': algorithm_config.version,
+        'last_log_row_num': last_log_row_num,
+    }))
+
+    while ws.connected:
+        message = ws.recv()
+        if not message:
+            continue
+        result = json.loads(message)
+        last_log_row_num = result['last_log_row_num']
+        print(result['log'])
+
+
+def start_deploy(config_path: str):
+    ''' 开始部署 '''
+    try:
+        algorithm_config = ConfigLoader(config_path)
+        algorithm_info = Algoinfo(algorithm_config.name, algorithm_config.version)
+
+        response = requests.post(algorithm_info.start_deploy_url, json={
+            'algoname': algorithm_config.name,
+            'version': algorithm_config.version,
+        }, headers=login_instance.get_header())
+        if response.status_code != 200 and response.status_code != 201:
+            raise Exception(response.status_code, response.content.decode())
+        if response.json()['status'] != 200:
+            raise Exception(response.json().get('err_msg', 'Start deploy error.'))
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Start deploy...')
+    except Exception as e:
+        traceback.print_exc()
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Start deploy error:', str(e))
+        exit(1)
+
+
+def get_deploy_log(config_path: str):
+    ''' 获取部署日志 '''
+    algorithm_config = ConfigLoader(config_path)
+    algorithm_info = Algoinfo(algorithm_config.name, algorithm_config.version)
+    last_log_row_num = 0
+
+    ws = create_connection(algorithm_info.get_deploy_ws_url, header=login_instance.get_header())
     ws.send(json.dumps({
         'algoname': algorithm_config.name,
         'version': algorithm_config.version,

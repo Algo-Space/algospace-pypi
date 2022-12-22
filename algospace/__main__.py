@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-12-21 15:13:57
+@LastEditTime: 2022-12-22 17:05:27
 '''
 
 from argparse import ArgumentParser
@@ -58,11 +58,13 @@ def run():
     elif args.command == 'start':
         if args.enroll_remote is True:
             from algospace.provider.enroll import enroll_from_config
-            from algospace.provider.remote import upload_local_file_as_zip, start_build_image, get_build_log
+            from algospace.provider.remote import upload_local_file_as_zip, start_build_image, get_build_log, start_deploy, get_deploy_log
             enroll_from_config(args.config_path)
             upload_local_file_as_zip(args.config_path)
             start_build_image(args.config_path)
             get_build_log(args.config_path)
+            start_deploy(args.config_path)
+            get_deploy_log(args.config_path)
         else:
             from algospace.provider.service import run_service
             run_service(args.config_path)
