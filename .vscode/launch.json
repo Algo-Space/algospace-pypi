@@ -15,6 +15,30 @@
                 "kermit_test/algospace-config.py"
             ],
             "justMyCode": true
+        },
+        {
+            "name": "Asc: Cloud Deploy Command",
+            "type": "python",
+            "request": "launch",
+            "module": "algospace",
+            "args": [
+                "cloud:deploy",
+                "-c",
+                "kermit_test/algospace-config.py"
+            ],
+            "justMyCode": true
+        },
+        {
+            "name": "Asc: Cloud Log Command",
+            "type": "python",
+            "request": "launch",
+            "module": "algospace",
+            "args": [
+                "cloud:log",
+                "-c",
+                "kermit_test/algospace-config.py"
+            ],
+            "justMyCode": true
         }
     ]
 }
