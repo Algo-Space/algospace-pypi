@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-12-13 16:19:45
 @LastEditors: Kermit
-@LastEditTime: 2022-12-24 20:30:20
+@LastEditTime: 2022-12-25 11:13:47
 '''
 
 import traceback
@@ -48,6 +48,8 @@ def run_cloud_deploy(config_path: str):
     if get_service_status(algorithm_config.name, algorithm_config.version) == 'unready':
         try:
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Upload processing...')
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] It may take a few minutes to upload your code.')
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] It depends on the size of your code.')
             upload_local_file_as_zip(algorithm_config.name, algorithm_config.version)
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Upload successfully!')
         except Exception as e:
@@ -64,7 +66,20 @@ def run_cloud_deploy(config_path: str):
             exit(1)
 
     if get_service_status(algorithm_config.name, algorithm_config.version) in ('built', 'building', 'pending', 'unready'):
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Build log:')
         get_build_log(algorithm_config.name, algorithm_config.version)
+
+        while get_service_status(algorithm_config.name, algorithm_config.version) in ('building', 'pending'):
+            time.sleep(1)
+        if get_service_status(algorithm_config.name, algorithm_config.version) == 'unready':
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Build failed.')
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Please check your code and config file according to the build log.')
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] After modification,')
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] please run the command again.')
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Or go to https://algospace.top to replace part of files uploaded. (Avoid re-uploading the entire code)')
+            exit(1)
+        if get_service_status(algorithm_config.name, algorithm_config.version) == 'built':
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Build successfully!')
 
     if get_service_status(algorithm_config.name, algorithm_config.version) == 'built':
         try:
@@ -77,7 +92,22 @@ def run_cloud_deploy(config_path: str):
             exit(1)
 
     if get_service_status(algorithm_config.name, algorithm_config.version) in ('deployed', 'deploying', 'waiting', 'built'):
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] It may take a few minutes to distribute the image to calculation node.')
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] And then the deploy log will be shown below. Please wait patiently.')
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Deploy log:')
         get_deploy_log(algorithm_config.name, algorithm_config.version)
+
+        while get_service_status(algorithm_config.name, algorithm_config.version) in ('deploying', 'waiting'):
+            time.sleep(1)
+        if get_service_status(algorithm_config.name, algorithm_config.version) == 'built':
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Deploy failed.')
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Please check your code and config file according to the deploy log.')
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] After modification,')
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] please run the command with \'--reset\' argument to deploy again.')
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Or go to https://algospace.top to replace part of files uploaded. (Avoid re-uploading the entire code)')
+            exit(1)
+        if get_service_status(algorithm_config.name, algorithm_config.version) == 'deployed':
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Deploy successfully!')
 
 
 def show_running_log(config_path: str):
@@ -89,7 +119,7 @@ def show_running_log(config_path: str):
         exit(1)
 
     if get_service_status(algorithm_config.name, algorithm_config.version) == 'deployed':
-        get_deploy_log(algorithm_config.name, algorithm_config.version)
+        get_deploy_log(algorithm_config.name, algorithm_config.version, True)
     else:
         print('[AlgoSpace] The service is not deployed. Please run `algospace cloud:deploy` first.')
 
@@ -170,7 +200,7 @@ def get_build_log(name: str, version: str):
             continue
         result = json.loads(message)
         last_log_row_num = result['last_log_row_num']
-        print(add_prefix_to_log(result['log'], 'Cloud Build'))
+        print(add_prefix_to_log(result['log'], 'Cloud Build Log'))
 
 
 def start_deploy(name: str, version: str):
@@ -187,15 +217,17 @@ def start_deploy(name: str, version: str):
         raise Exception(response.json().get('err_msg', 'Start deploy error.'))
 
 
-def get_deploy_log(name: str, version: str):
+def get_deploy_log(name: str, version: str, keep_after_success: bool = False):
     ''' 获取部署日志 '''
     algorithm_info = Algoinfo(name, version)
     last_log_row_num = 0
 
-    ws = create_connection(algorithm_info.get_deploy_ws_url, header=login_instance.get_header())
+    ws = create_connection(algorithm_info.get_deploy_ws_url,
+                           header=login_instance.get_header())
     ws.send(json.dumps({
         'algoname': name,
         'version': version,
+        'keep_after_success': True if keep_after_success else '',
         'last_log_row_num': last_log_row_num,
     }))
 
@@ -205,7 +237,7 @@ def get_deploy_log(name: str, version: str):
             continue
         result = json.loads(message)
         last_log_row_num = result['last_log_row_num']
-        print(add_prefix_to_log(result['log'], 'Cloud Deploy'))
+        print(add_prefix_to_log(result['log'], 'Cloud Deploy Log'))
 
 
 def add_prefix_to_log(log: str, prefix: str):
