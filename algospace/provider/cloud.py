@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-12-13 16:19:45
 @LastEditors: Kermit
-@LastEditTime: 2022-12-25 11:13:47
+@LastEditTime: 2022-12-25 11:17:26
 '''
 
 import traceback
@@ -108,6 +108,7 @@ def run_cloud_deploy(config_path: str):
             exit(1)
         if get_service_status(algorithm_config.name, algorithm_config.version) == 'deployed':
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Deploy successfully!')
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] You can run `algospace cloud:log` to view the running log.')
 
 
 def show_running_log(config_path: str):

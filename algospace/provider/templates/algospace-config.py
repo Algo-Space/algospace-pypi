@@ -6,19 +6,19 @@
 #   - version:              算法版本，仅能包含英文字母、数字和 . 符号
 #   - username:             登录名
 #   - password:             密码
-#   - service_filepath:     算法服务文件路径，相对于本文件路径
+#   - service_filepath:     算法服务函数所在文件路径，相对于本文件路径
 #   - service_function:     算法服务函数名
-#   - service_input:        算法服务函数输入参数，字典类型
+#   - service_input:        函数输入参数，字典类型
 #       - .{arg}:           参数名
 #       - .{arg}.type:      参数类型，包含: str (字符串), int (定点数), float (浮点数), image_path (图片本地路径), video_path (视频本地路径), voice_path (音频本地路径)
 #       - .{arg}.describe:  参数简要描述
-#   - service_output:       算法服务函数输出参数，字典类型，函数需以对应字典类型输出
+#   - service_output:       函数输出参数，字典类型，函数需以对应字典类型输出
 #       - .{arg}:           参数名
 #       - .{arg}.type:      参数类型，包含: str (字符串), int (定点数), float (浮点数), image_path (图片本地路径), video_path (视频本地路径), voice_path (音频本地路径)
 #       - .{arg}.describe:  参数简要描述
-#   - service_timeout:      算法服务超时时间，单位: 秒
-#   - service_max_parallel: 算法服务最大同时处理请求数；若大于 1，则需要保证算法服务函数处理时的线程安全，否则请通过多实例部署算法
-#   - service_tmp_dir:      算法服务临时文件存放文件夹的路径，相对于本文件路径，用于函数输入参数包含 image_path, video_path, voice_path 时存放临时文件
+#   - service_timeout:      超时时间，单位: 秒
+#   - service_max_parallel: 最大同时处理请求数；若大于 1，则需要保证函数处理时的线程安全，否则请通过多实例部署算法
+#   - service_tmp_dir:      临时文件存放文件夹的路径，相对于本文件路径，用于函数输入参数包含 image_path, video_path, voice_path 时存放临时文件
 #
 # 参数配置填写示例:
 #   示例函数:
@@ -96,7 +96,7 @@ base_image = 'python:3.9'
 
 ############################
 # 需要自主实现更复杂的 Gradio 应用时，可使用以下选项替代自动生成的 Gradio 应用:
-#   - gradio_launch_filepath: 自主实现的 Gradio 入口文件路径，相对于本文件路径，如：'./gradio_launch.py'
+#   - gradio_launch_filepath: 自主实现的 Gradio 入口函数所在文件路径，相对于本文件路径，如：'./gradio_launch.py'
 #   - gradio_launch_function: 自主实现的 Gradio 入口函数名，如：'gradio_launch'，入口函数应当不含任何参数
 #   - gradio_launch_host:     自主实现的 Gradio 服务器地址，同 Gradio 的 GRADIO_SERVER_NAME 配置，默认：'127.0.0.1'
 #   - gradio_launch_port:     自主实现的 Gradio 端口号，同 Gradio 的 GRADIO_SERVER_PORT 配置，默认：7860
