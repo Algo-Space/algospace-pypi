@@ -5,11 +5,11 @@
 @Author: Kermit
 @Date: 2022-12-13 16:19:45
 @LastEditors: Kermit
-@LastEditTime: 2022-12-25 11:17:26
+@LastEditTime: 2022-12-29 14:59:32
 '''
 
 import traceback
-from websocket import create_connection
+import websocket
 from zipfile import ZipFile
 import os
 import time
@@ -48,8 +48,10 @@ def run_cloud_deploy(config_path: str):
     if get_service_status(algorithm_config.name, algorithm_config.version) == 'unready':
         try:
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Upload processing...')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] It may take a few minutes to upload your code.')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] It depends on the size of your code.')
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                  '[AlgoSpace] It may take a few minutes to upload your code.')
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                  '[AlgoSpace] It depends on the size of your code.')
             upload_local_file_as_zip(algorithm_config.name, algorithm_config.version)
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Upload successfully!')
         except Exception as e:
@@ -73,10 +75,13 @@ def run_cloud_deploy(config_path: str):
             time.sleep(1)
         if get_service_status(algorithm_config.name, algorithm_config.version) == 'unready':
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Build failed.')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Please check your code and config file according to the build log.')
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                  '[AlgoSpace] Please check your code and config file according to the build log.')
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] After modification,')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] please run the command again.')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Or go to https://algospace.top to replace part of files uploaded. (Avoid re-uploading the entire code)')
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                  '[AlgoSpace] please run the command again.')
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                  '[AlgoSpace] Or go to https://algospace.top to replace part of files uploaded. (Avoid re-uploading the entire code)')
             exit(1)
         if get_service_status(algorithm_config.name, algorithm_config.version) == 'built':
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Build successfully!')
@@ -92,8 +97,10 @@ def run_cloud_deploy(config_path: str):
             exit(1)
 
     if get_service_status(algorithm_config.name, algorithm_config.version) in ('deployed', 'deploying', 'waiting', 'built'):
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] It may take a few minutes to distribute the image to calculation node.')
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] And then the deploy log will be shown below. Please wait patiently.')
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+              '[AlgoSpace] It may take a few minutes to distribute the image to calculation node.')
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+              '[AlgoSpace] And then the deploy log will be shown below. Please wait patiently.')
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Deploy log:')
         get_deploy_log(algorithm_config.name, algorithm_config.version)
 
@@ -101,14 +108,18 @@ def run_cloud_deploy(config_path: str):
             time.sleep(1)
         if get_service_status(algorithm_config.name, algorithm_config.version) == 'built':
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Deploy failed.')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Please check your code and config file according to the deploy log.')
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                  '[AlgoSpace] Please check your code and config file according to the deploy log.')
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] After modification,')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] please run the command with \'--reset\' argument to deploy again.')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Or go to https://algospace.top to replace part of files uploaded. (Avoid re-uploading the entire code)')
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                  '[AlgoSpace] please run the command with \'--reset\' argument to deploy again.')
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                  '[AlgoSpace] Or go to https://algospace.top to replace part of files uploaded. (Avoid re-uploading the entire code)')
             exit(1)
         if get_service_status(algorithm_config.name, algorithm_config.version) == 'deployed':
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Deploy successfully!')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] You can run `algospace cloud:log` to view the running log.')
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                  '[AlgoSpace] You can run `algospace cloud:log` to view the running log.')
 
 
 def show_running_log(config_path: str):
@@ -183,25 +194,34 @@ def start_build_image(name: str, version: str, config_path: str):
         raise Exception(response.json().get('err_msg', 'Start build image error.'))
 
 
-def get_build_log(name: str, version: str):
+def get_build_log(name: str, version: str, last_log_row_num: int = 0):
     ''' 获取构建日志 '''
     algorithm_info = Algoinfo(name, version)
-    last_log_row_num = 0
 
-    ws = create_connection(algorithm_info.get_build_ws_url, header=login_instance.get_header())
-    ws.send(json.dumps({
-        'algoname': name,
-        'version': version,
-        'last_log_row_num': last_log_row_num,
-    }))
-
-    while ws.connected:
-        message = ws.recv()
-        if not message:
-            continue
+    def on_message(ws: websocket.WebSocket, message):
+        nonlocal last_log_row_num
         result = json.loads(message)
         last_log_row_num = result['last_log_row_num']
         print(add_prefix_to_log(result['log'], 'Cloud Build Log'))
+
+    def on_close(ws: websocket.WebSocket, close_status_code: int, close_msg: str):
+        if close_status_code != 1000 and close_status_code < 4000:
+            # 非应用的异常码则重新连接
+            get_build_log(name, version, last_log_row_num)
+
+    def on_open(ws: websocket.WebSocket):
+        ws.send(json.dumps({
+            'algoname': name,
+            'version': version,
+            'last_log_row_num': last_log_row_num,
+        }))
+
+    ws = websocket.WebSocketApp(algorithm_info.get_build_ws_url,
+                                header=login_instance.get_header(),
+                                on_open=on_open,
+                                on_message=on_message,
+                                on_close=on_close)
+    ws.run_forever()
 
 
 def start_deploy(name: str, version: str):
@@ -218,27 +238,35 @@ def start_deploy(name: str, version: str):
         raise Exception(response.json().get('err_msg', 'Start deploy error.'))
 
 
-def get_deploy_log(name: str, version: str, keep_after_success: bool = False):
+def get_deploy_log(name: str, version: str, keep_after_success: bool = False, last_log_row_num: int = 0):
     ''' 获取部署日志 '''
     algorithm_info = Algoinfo(name, version)
-    last_log_row_num = 0
 
-    ws = create_connection(algorithm_info.get_deploy_ws_url,
-                           header=login_instance.get_header())
-    ws.send(json.dumps({
-        'algoname': name,
-        'version': version,
-        'keep_after_success': True if keep_after_success else '',
-        'last_log_row_num': last_log_row_num,
-    }))
-
-    while ws.connected:
-        message = ws.recv()
-        if not message:
-            continue
+    def on_message(ws: websocket.WebSocket, message):
+        nonlocal last_log_row_num
         result = json.loads(message)
         last_log_row_num = result['last_log_row_num']
         print(add_prefix_to_log(result['log'], 'Cloud Deploy Log'))
+
+    def on_close(ws: websocket.WebSocket, close_status_code: int, close_msg: str):
+        if close_status_code != 1000 and close_status_code < 4000:
+            # 非应用的异常码则重新连接
+            get_deploy_log(name, version, keep_after_success, last_log_row_num)
+
+    def on_open(ws: websocket.WebSocket):
+        ws.send(json.dumps({
+            'algoname': name,
+            'version': version,
+            'keep_after_success': True if keep_after_success else '',
+            'last_log_row_num': last_log_row_num,
+        }))
+
+    ws = websocket.WebSocketApp(algorithm_info.get_deploy_ws_url,
+                                header=login_instance.get_header(),
+                                on_open=on_open,
+                                on_message=on_message,
+                                on_close=on_close)
+    ws.run_forever()
 
 
 def add_prefix_to_log(log: str, prefix: str):
