@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-12-13 16:19:45
 @LastEditors: Kermit
-@LastEditTime: 2022-12-29 14:59:32
+@LastEditTime: 2022-12-29 18:54:19
 '''
 
 import traceback
@@ -21,7 +21,7 @@ from algospace.login import login_instance, login
 from algospace.provider.enroll import enroll
 
 
-def run_cloud_deploy(config_path: str):
+def run_cloud_deploy(config_path: str, reset: bool = False):
     ''' 云端部署 '''
     print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Initializing...')
     algorithm_config = ConfigLoader(config_path)
@@ -44,6 +44,15 @@ def run_cloud_deploy(config_path: str):
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
               f'[AlgoSpace] Enroll failed:', str(e))
         exit(1)
+
+    if reset and get_service_status(algorithm_config.name, algorithm_config.version) == 'built':
+        try:
+            reset_status_image(algorithm_config.name, algorithm_config.version)
+        except Exception as e:
+            traceback.print_exc()
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                  '[AlgoSpace] Reset status error:', str(e))
+            exit(1)
 
     if get_service_status(algorithm_config.name, algorithm_config.version) == 'unready':
         try:
@@ -79,7 +88,7 @@ def run_cloud_deploy(config_path: str):
                   '[AlgoSpace] Please check your code and config file according to the build log.')
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] After modification,')
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[AlgoSpace] please run the command again.')
+                  '[AlgoSpace] please run `algospace cloud:deploy` again.')
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
                   '[AlgoSpace] Or go to https://algospace.top to replace part of files uploaded. (Avoid re-uploading the entire code)')
             exit(1)
@@ -112,7 +121,7 @@ def run_cloud_deploy(config_path: str):
                   '[AlgoSpace] Please check your code and config file according to the deploy log.')
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] After modification,')
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[AlgoSpace] please run the command with \'--reset\' argument to deploy again.')
+                  '[AlgoSpace] please run `algospace cloud:deploy --reset` to deploy again.')
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
                   '[AlgoSpace] Or go to https://algospace.top to replace part of files uploaded. (Avoid re-uploading the entire code)')
             exit(1)
@@ -192,6 +201,20 @@ def start_build_image(name: str, version: str, config_path: str):
         raise Exception(response.status_code, response.content.decode())
     if response.json()['status'] != 200:
         raise Exception(response.json().get('err_msg', 'Start build image error.'))
+
+
+def reset_status_image(name: str, version: str):
+    ''' 重置算法状态 '''
+    algorithm_info = Algoinfo(name, version)
+
+    response = requests.post(algorithm_info.reset_status_url, json={
+        'algoname': name,
+        'version': version,
+    }, headers=login_instance.get_header())
+    if response.status_code != 200 and response.status_code != 201:
+        raise Exception(response.status_code, response.content.decode())
+    if response.json()['status'] != 200:
+        raise Exception(response.json().get('err_msg', 'Reset status error.'))
 
 
 def get_build_log(name: str, version: str, last_log_row_num: int = 0):

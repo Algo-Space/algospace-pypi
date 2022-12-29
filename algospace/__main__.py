@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-12-24 20:28:12
+@LastEditTime: 2022-12-29 18:50:22
 '''
 
 from argparse import ArgumentParser
@@ -16,8 +16,7 @@ class ArgNamespace:
     version = 'version'
     config_path = 'config_path'
     generate_type = 'generate_type'
-
-    cloud_command = 'cloud_command'
+    cloud_deploy_reset = 'cloud_deploy_reset'
 
 
 def run():
@@ -36,7 +35,7 @@ def run():
                         '--version',
                         dest=ArgNamespace.version,
                         action='store_true',
-                        help='显示版本信息')  # ArgNamespace.version
+                        help='显示版本信息')
     # start 命令参数
     start_parser.add_argument('-c',
                               '--config',
@@ -45,7 +44,7 @@ def run():
                               type=str,
                               required=False,
                               default='algospace-config.py',
-                              help='algospace-config.py 配置文件路径')  # ArgNamespace.config_path
+                              help='algospace-config.py 配置文件路径')
     # generate 命令参数
     generate_parser.add_argument('-c',
                                  '--config',
@@ -54,7 +53,7 @@ def run():
                                  type=str,
                                  required=False,
                                  default='algospace-config.py',
-                                 help='algospace-config.py 配置文件路径')  # ArgNamespace.config_path
+                                 help='algospace-config.py 配置文件路径')
     # enroll 命令参数
     enroll_parser.add_argument('-c',
                                '--config',
@@ -63,7 +62,7 @@ def run():
                                type=str,
                                required=False,
                                default='algospace-config.py',
-                               help='algospace-config.py 配置文件路径')  # ArgNamespace.config_path
+                               help='algospace-config.py 配置文件路径')
     # cloud:deploy 命令参数
     cloud_deploy_parser.add_argument('-c',
                                      '--config',
@@ -72,7 +71,12 @@ def run():
                                      type=str,
                                      required=False,
                                      default='algospace-config.py',
-                                     help='algospace-config.py 配置文件路径')  # ArgNamespace.config_path
+                                     help='algospace-config.py 配置文件路径')
+    cloud_deploy_parser.add_argument('-r',
+                                     '--reset',
+                                     dest=ArgNamespace.cloud_deploy_reset,
+                                     action='store_true',
+                                     help='重新构建镜像，不使用已构建的镜像')
     # cloud:log 命令参数
     cloud_log_parser.add_argument('-c',
                                   '--config',
@@ -81,7 +85,7 @@ def run():
                                   type=str,
                                   required=False,
                                   default='algospace-config.py',
-                                  help='algospace-config.py 配置文件路径')  # ArgNamespace.config_path
+                                  help='algospace-config.py 配置文件路径')
 
     args = ArgNamespace()
     parser.parse_args(namespace=args)
@@ -111,7 +115,7 @@ def run():
 
     elif args.command == 'cloud:deploy':
         from algospace.provider.cloud import run_cloud_deploy
-        run_cloud_deploy(args.config_path)
+        run_cloud_deploy(args.config_path, args.cloud_deploy_reset is True)
 
     elif args.command == 'cloud:log':
         from algospace.provider.cloud import show_running_log
