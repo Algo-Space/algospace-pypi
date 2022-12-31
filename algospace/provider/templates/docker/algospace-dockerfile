@@ -6,13 +6,11 @@ ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 WORKDIR /work
+COPY . /work
 
-COPY ./algospace-requirements.txt /work/
 {PIP_RUN}pip config set global.index-url http://mirrors.aliyun.com/pypi/simple/ && \
     pip config set install.trusted-host mirrors.aliyun.com && \
     pip install algospace && \
     pip --timeout=6000 install -r algospace-requirements.txt
-
-COPY . /work
 {PRE_COMMAND}
 CMD algospace start -c {CONFIG_PATH}
