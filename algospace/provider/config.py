@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-24 14:45:40
 @LastEditors: Kermit
-@LastEditTime: 2022-12-29 18:53:44
+@LastEditTime: 2022-12-31 10:26:06
 '''
 
 wait_interval = 1
@@ -73,6 +73,10 @@ class Algoinfo:
     @property
     def algorithm_site(self):
         return f'https://algospace.top/algorithm/{self.name}/{self.version}'
+
+    @property
+    def algorithm_cloud_site(self):
+        return self.algorithm_site + '/cloud'
 
     @property
     def get_service_status_url(self):

@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-12-29 18:50:22
+@LastEditTime: 2022-12-31 12:57:49
 '''
 
 from argparse import ArgumentParser
@@ -16,6 +16,9 @@ class ArgNamespace:
     version = 'version'
     config_path = 'config_path'
     generate_type = 'generate_type'
+    generate_debian_mirror = 'generate_debian_mirror'
+    generate_use_buildkit_debian_cache = 'generate_use_buildkit_debian_cache'
+    generate_use_buildkit_pip_cache = 'generate_use_buildkit_pip_cache'
     cloud_deploy_reset = 'cloud_deploy_reset'
 
 
@@ -54,6 +57,20 @@ def run():
                                  required=False,
                                  default='algospace-config.py',
                                  help='algospace-config.py 配置文件路径')
+    generate_parser.add_argument('-d',
+                                 '--debian-mirror',
+                                 dest=ArgNamespace.generate_debian_mirror,
+                                 metavar='<163,aliyun,ustc,tsinghua>',
+                                 choices=['163', 'aliyun', 'ustc', 'tsinghua'],
+                                 help='更改 Debian 镜像源')
+    generate_parser.add_argument('--buildkit-debian-cache',
+                                 dest=ArgNamespace.generate_use_buildkit_debian_cache,
+                                 action='store_true',
+                                 help='使用 BuildKit 缓存 Debian apt packages')
+    generate_parser.add_argument('--buildkit-pip-cache',
+                                 dest=ArgNamespace.generate_use_buildkit_pip_cache,
+                                 action='store_true',
+                                 help='使用 BuildKit 缓存 pip packages')
     # enroll 命令参数
     enroll_parser.add_argument('-c',
                                '--config',
@@ -107,7 +124,10 @@ def run():
 
     elif args.command == 'generate':
         from algospace.provider.docker_generator import generate_docker_config
-        generate_docker_config(args.config_path)
+        generate_docker_config(args.config_path,
+                               args.generate_debian_mirror,
+                               args.generate_use_buildkit_debian_cache is True,
+                               args.generate_use_buildkit_pip_cache is True)
 
     elif args.command == 'enroll':
         from algospace.provider.enroll import enroll_from_config

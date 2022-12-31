@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-12-13 16:19:45
 @LastEditors: Kermit
-@LastEditTime: 2022-12-29 18:54:19
+@LastEditTime: 2022-12-31 10:28:25
 '''
 
 import traceback
@@ -25,6 +25,7 @@ def run_cloud_deploy(config_path: str, reset: bool = False):
     ''' 云端部署 '''
     print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Initializing...')
     algorithm_config = ConfigLoader(config_path)
+    algorithm_info = Algoinfo(algorithm_config.name, algorithm_config.version)
     if not login(algorithm_config.username, algorithm_config.password):
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
               '[AlgoSpace] Login failed. Please check your password.')
@@ -90,7 +91,7 @@ def run_cloud_deploy(config_path: str, reset: bool = False):
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
                   '[AlgoSpace] please run `algospace cloud:deploy` again.')
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[AlgoSpace] Or go to https://algospace.top to replace part of files uploaded. (Avoid re-uploading the entire code)')
+                  f'[AlgoSpace] Or go to {algorithm_info.algorithm_cloud_site} to replace part of files uploaded. (Avoid re-uploading the entire code)')
             exit(1)
         if get_service_status(algorithm_config.name, algorithm_config.version) == 'built':
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Build successfully!')
@@ -123,7 +124,7 @@ def run_cloud_deploy(config_path: str, reset: bool = False):
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
                   '[AlgoSpace] please run `algospace cloud:deploy --reset` to deploy again.')
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[AlgoSpace] Or go to https://algospace.top to replace part of files uploaded. (Avoid re-uploading the entire code)')
+                  f'[AlgoSpace] Or go to {algorithm_info.algorithm_cloud_site} to replace part of files uploaded. (Avoid re-uploading the entire code)')
             exit(1)
         if get_service_status(algorithm_config.name, algorithm_config.version) == 'deployed':
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Deploy successfully!')
