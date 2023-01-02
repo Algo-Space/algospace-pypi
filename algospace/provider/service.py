@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-12-13 13:09:24
+@LastEditTime: 2023-01-02 15:55:45
 '''
 
 from typing import Callable, Optional, List, Tuple
@@ -754,6 +754,7 @@ class Service:
             stdio_exec = QueueStdIOExec(stdio_queue).exec
             while True:
                 try:
+                    await asyncio.sleep(0.1)
                     await asyncio.get_running_loop().run_in_executor(None, stdio_exec)
                 except Exception as e:
                     traceback.print_exc()
