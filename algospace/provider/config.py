@@ -80,7 +80,7 @@ class Algoinfo:
 
     @property
     def get_service_status_url(self):
-        return 'https://algospace.top/core/algo/builder/status'
+        return 'https://algospace.top/core/algo/pypi/cloud/status'
 
     @property
     def upload_code_url(self):
@@ -88,20 +88,20 @@ class Algoinfo:
 
     @property
     def start_build_url(self):
-        return 'https://algospace.top/core/algo/builder/start'
+        return 'https://algospace.top/core/algo/build/start'
 
     @property
     def reset_status_url(self):
-        return 'https://algospace.top/core/algo/builder/reset'
+        return 'https://algospace.top/core/algo/build/reset'
 
     @property
     def get_build_ws_url(self):
-        return 'wss://algospace.top/core/algo/builder/ws/log'
+        return 'wss://algospace.top/core/algo/build/ws/log'
 
     @property
     def start_deploy_url(self):
-        return 'https://algospace.top/core/algo/dispatcher/start'
+        return 'https://algospace.top/core/algo/deploy/start'
 
     @property
     def get_deploy_ws_url(self):
-        return 'wss://algospace.top/core/algo/dispatcher/ws/log'
+        return 'wss://algospace.top/core/algo/deploy/ws/log'
