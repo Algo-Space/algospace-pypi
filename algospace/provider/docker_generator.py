@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-11 13:21:18
 @LastEditors: Kermit
-@LastEditTime: 2022-12-31 13:04:32
+@LastEditTime: 2023-01-06 15:43:49
 '''
 
 import traceback
@@ -79,6 +79,7 @@ def gen_dockerfile(pre_command: list[str],
     else:
         template = template.replace('{PIP_RUN}', 'RUN --mount=type=cache,target=/root/.cache/pip \\\n    ')
 
+    pre_command = list(filter(lambda x: x.strip() != '' and not x.strip().startswith('#'), pre_command))
     pre_command_lines = ''
     is_curr_first_pre_command_line = True
     if len(pre_command) > 0:
