@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-07 14:56:36
 @LastEditors: Kermit
-@LastEditTime: 2022-12-11 14:33:30
+@LastEditTime: 2023-01-06 16:30:43
 '''
 
 import sys
@@ -23,7 +23,6 @@ class RedirectPrint:
         self.original_stdout_write = None
 
     def open(self):
-        sys.stdout.close()
         sys.stdout.write = self.original_stdout_write  # type: ignore
 
     def close(self):
@@ -44,7 +43,6 @@ class HiddenPrint:
         self.original_stdout = None
 
     def open(self):
-        sys.stdout.close()
         sys.stdout = self.original_stdout
 
     def close(self):
@@ -116,5 +114,10 @@ class QueueStdIOExec:
                 attr(*args, **kwargs)
             if name == 'write':
                 io.flush()
+            return True
         except:
+            return False
+
+    def exec_all(self):
+        while self.exec():
             pass

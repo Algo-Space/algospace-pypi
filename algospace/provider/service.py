@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-01-02 15:55:45
+@LastEditTime: 2023-01-06 16:15:02
 '''
 
 from typing import Callable, Optional, List, Tuple
@@ -63,7 +63,8 @@ class FnService:
                fn_req_queue_list: List[multiprocessing.Queue],
                fn_res_queue_list: List[multiprocessing.Queue]) -> None:
         ''' 启动函数服务 '''
-        self.algorithm_config.verify_service()  # 校验函数配置并附带将函数 import 入进程
+        # 校验函数配置并附带将函数 import 入进程
+        self.algorithm_config.verify_service()
         with concurrent.futures.ThreadPoolExecutor() as pool:
             pool.map(self.launch_thread,
                      [i for i in range(len(fn_req_queue_list))],
@@ -317,7 +318,8 @@ class GradioService:
 
     def launch_self(self, gradio_port_con: Connection) -> None:
         ''' 启动自主编写的 Gradio 服务 '''
-        self.algorithm_config.verify_gradio_launch()  # 校验自主实现的 Gradio 配置并附带将应用 import 入进程
+        # 校验自主实现的 Gradio 配置并附带将应用 import 入进程
+        self.algorithm_config.verify_gradio_launch()
         threading.Thread(target=self.check_launched, args=(gradio_port_con,), daemon=True).start()
         with GradioPrint():
             self.algorithm_config.gradio_launch_fn()  # 启动 Gradio 服务
@@ -751,15 +753,22 @@ class Service:
                           f'[{self.algorithm_info.upper_name}] Heartbeat error:', str(e))
 
         async def subprocess_stdio_task():
-            stdio_exec = QueueStdIOExec(stdio_queue).exec
+            queue_stdio_exec = QueueStdIOExec(stdio_queue)
+            stdio_exec = queue_stdio_exec.exec
+            stdio_exec_all = queue_stdio_exec.exec_all
+            is_execed = True
             while True:
                 try:
-                    await asyncio.sleep(0.1)
-                    await asyncio.get_running_loop().run_in_executor(None, stdio_exec)
+                    if not is_execed:
+                        await asyncio.sleep(0.1)
+                    is_execed = await asyncio.get_running_loop().run_in_executor(None, stdio_exec)
                 except Exception as e:
                     traceback.print_exc()
                     print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
                           f'[{self.algorithm_info.upper_name}] Handle subprocess stdio error:', str(e))
+                except asyncio.CancelledError:
+                    stdio_exec_all()
+                    raise
 
         # 当有任务抛出异常时，停止所有任务
         tasks = [alive_task(), heartbeat_task(), subprocess_stdio_task()]
