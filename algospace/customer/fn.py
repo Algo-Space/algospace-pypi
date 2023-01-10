@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-11 15:47:20
 @LastEditors: Kermit
-@LastEditTime: 2023-01-09 20:01:59
+@LastEditTime: 2023-01-10 23:12:45
 '''
 
 from typing import Optional, Callable
@@ -118,36 +118,29 @@ class AlgoFunction:
             param_type = param['type']
             kwargs[param_key] = self.get_input_type_class(param_type)(kwargs[param_key])
 
-        response = requests.post(info['submit_url'],
-                                 data=kwargs,
-                                 headers=login_instance.get_header(),
-                                 timeout=self.timeout)
+        try:
+            response = requests.post(info['predict_url'],
+                                     data=kwargs,
+                                     headers=login_instance.get_header(),
+                                     timeout=self.timeout)
+        except requests.exceptions.ReadTimeout:
+            raise TimeOutException('Call algorithm function timeout.')
         if response.status_code != 200 and response.status_code != 201:
             raise Exception(response.status_code, response.content.decode())
         if response.json()['status'] != 200:
             raise CallException(response.json().get('err_msg', 'Call algorithm function error.'))
-        req_id = response.json()['data']['id']
 
-        start_time = time.time()
-        while True:
-            if time.time() - start_time >= self.timeout:
-                raise TimeOutException('Timeout.')
-            response = requests.get(info['get_result_url'], params={
-                'id': req_id}, headers=login_instance.get_header(), timeout=self.timeout)
-            if response.status_code != 200 and response.status_code != 201 and response.json()['status'] != 200:
-                time.sleep(config.interval)
-                continue
-            result_status = response.json()['data']['status']
-            result = response.json()['data']['result']
-            if result_status == 'error':
-                raise CallException(
-                    f'There is something wrong in algorithm provider service: {result.get("err_msg", "(no error message).")}')
+        result_status = response.json()['data']['status']
+        result = response.json()['data']['result']
+        if result_status == 'error':
+            raise CallException(
+                f'There is something wrong in algorithm provider service: {result.get("err_msg", "(no error message).")}')
 
-            for param in output_param:
-                param_key = param['key']
-                param_type = param['type']
-                result[param_key] = self.get_output_type_class(param_type)(result[param_key])
-            return result
+        for param in output_param:
+            param_key = param['key']
+            param_type = param['type']
+            result[param_key] = self.get_output_type_class(param_type)(result[param_key])
+        return result
 
     def get_info(self) -> dict:
         ''' 获取算法信息 '''
@@ -171,7 +164,7 @@ class AlgoFunction:
                 'create_date': algo['create_date'],
                 'example': algo['example'],
                 'output_example': algo['output_example'],
-                'submit_url': algo['submit_url'],
+                'predict_url': algo['predict_url'],
                 'get_result_url': algo['get_result_url']
             }
         return self.info
