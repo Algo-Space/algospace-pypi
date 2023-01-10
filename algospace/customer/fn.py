@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-11 15:47:20
 @LastEditors: Kermit
-@LastEditTime: 2022-12-05 17:42:32
+@LastEditTime: 2023-01-09 20:01:59
 '''
 
 from typing import Optional, Callable
@@ -101,7 +101,10 @@ class AlgoFunction:
         if not can_call:
             raise Exception('This algorithm is not callable now because the provider closed the service.')
 
-        kwargs = {}
+        kwargs = {
+            '__algo_name__': self.name,
+            '__algo_version__': self.version,
+        }
         for index, arg in enumerate(args):
             if len(input_param) == index:
                 break
@@ -115,8 +118,10 @@ class AlgoFunction:
             param_type = param['type']
             kwargs[param_key] = self.get_input_type_class(param_type)(kwargs[param_key])
 
-        response = requests.post(info['submit_url'], data=kwargs,
-                                 headers=login_instance.get_header(), timeout=self.timeout)
+        response = requests.post(info['submit_url'],
+                                 data=kwargs,
+                                 headers=login_instance.get_header(),
+                                 timeout=self.timeout)
         if response.status_code != 200 and response.status_code != 201:
             raise Exception(response.status_code, response.content.decode())
         if response.json()['status'] != 200:

@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-12-21 16:49:30
+@LastEditTime: 2023-01-09 22:56:13
 '''
 
 from .config import enroll_url, verify_config_url, is_component_normal_url
@@ -82,10 +82,22 @@ def verify_config(name: str, version: str, input: dict, output: dict):
 def is_component_normal(name: str, version: str):
     ''' 获取算法转发组件状态正常 '''
     headers = login_instance.get_header()
-    resp = requests.get(f'{is_component_normal_url}?name={name}&version={version}', headers=headers)
+    resp = requests.get(is_component_normal_url,
+                        params={'name': name, 'version': version},
+                        headers=headers)
     if resp.status_code != 200 and resp.status_code != 201:
         raise Exception(resp.status_code, resp.content.decode())
     if resp.json()['status'] != 200:
         raise Exception(resp.json().get('err_msg', 'Get component status error.'))
     is_component_normal = resp.json()['data'].get('is_component_normal')
-    return is_component_normal
+    ask_data_url = resp.json()['data'].get('ask_data_url')
+    return_ans_url = resp.json()['data'].get('return_ans_url')
+    return_err_url = resp.json()['data'].get('return_err_url')
+    gradio_upload_url = resp.json()['data'].get('gradio_upload_url')
+    return {
+        'is_component_normal': is_component_normal,
+        'ask_data_url': ask_data_url,
+        'return_ans_url': return_ans_url,
+        'return_err_url': return_err_url,
+        'gradio_upload_url': gradio_upload_url,
+    }

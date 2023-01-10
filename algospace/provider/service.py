@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-01-06 16:15:02
+@LastEditTime: 2023-01-10 11:27:56
 '''
 
 from typing import Callable, Optional, List, Tuple
@@ -92,7 +92,7 @@ class ApiService:
 
     def read_file(self, path: str) -> str:
         ''' 将 storage 返回的 path 转换为本地 path '''
-        file_url = self.algorithm_info.storage_file_url + '/' + path
+        file_url = config.storage_file_url + '/' + path
         tmp_path = self.algorithm_config.service_tmp_path
         dir_path = os.path.dirname(os.path.join(tmp_path, path))
         if not os.path.exists(dir_path):
@@ -116,7 +116,7 @@ class ApiService:
         with open(local_path, 'rb') as f:
             files = {'file': (filename, f.read())}
 
-        upload_url = f'{self.algorithm_info.storage_file_url}/{self.algorithm_info.name}/{self.algorithm_info.version}'
+        upload_url = f'{config.storage_file_url}/{self.algorithm_info.name}/{self.algorithm_info.version}'
         response = requests.post(upload_url, files=files, headers=login_instance.get_header())
         if response.status_code != 200 and response.status_code != 201 and response.json()['status'] != 200:
             raise Exception('Failed to write file.')
@@ -212,6 +212,7 @@ class GradioService:
     def __init__(self, algorithm_config: ConfigLoader, algorithm_info: Algoinfo) -> None:
         self.algorithm_config = algorithm_config
         self.algorithm_info = algorithm_info
+        self.gradio_upload_url = None
 
     def get_type_component(self, type: str, describe: str):
         ''' 获取处理每种类型的 Gradio component '''
@@ -381,7 +382,7 @@ class GradioService:
                 if os.path.isdir(filepath):
                     await upload_file(bashpath, os.path.join(subpath, filename))
                 else:
-                    url = self.algorithm_info.gradio_upload_url + '/' + subpath + '/' + filename
+                    url = self.gradio_upload_url + '/' + subpath + '/' + filename  # type: ignore
                     file = open(filepath, 'r', encoding="UTF-8", errors='ignore')
                     res = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.post(url, files={'file': file}, headers=login_instance.get_header()))
                     file.close()
@@ -395,7 +396,7 @@ class GradioService:
             html_file = open('./frontend/index.html', 'w+', encoding="UTF-8", errors='ignore')
             html_file.write(html_text)
             html_file.close()
-        url = self.algorithm_info.gradio_upload_url + '/index.html'
+        url = self.gradio_upload_url + '/index.html'  # type: ignore
         file = open('./frontend/index.html', 'r', encoding="UTF-8", errors='ignore')
         # 上传 index.html
         res = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.post(url, files={'file': file}, headers=login_instance.get_header()))
@@ -510,7 +511,12 @@ class Service:
         asyncio.run(start())
 
     async def ask_data(self):
-        ask_for_data_resp = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.get(self.algorithm_info.ask_data_url, headers=login_instance.get_header()))
+        ask_for_data_resp = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.get(self.ask_data_url,
+                                                                                                      params={
+                                                                                                          'algorithm_name': self.algorithm_info.name,
+                                                                                                          'algorithm_version': self.algorithm_info.version,
+                                                                                                      },
+                                                                                                      headers=login_instance.get_header()))
         if ask_for_data_resp.status_code != 200 and ask_for_data_resp.status_code != 201:
             raise Exception(ask_for_data_resp.status_code, ask_for_data_resp.content.decode())
         ask_for_data_dict = ask_for_data_resp.json()
@@ -556,15 +562,22 @@ class Service:
                 # 回传数据
                 res_info = {
                     'id': req_info['id'],
+                    'name': req_info['name'],
+                    'version': req_info['version'],
                     'type': req_info['type'],
-                    'status': 'finished',
+                    'status': 'success',
                     'owner': req_info['owner'],
                     'create_date': req_info['create_date'],
                     'result': result
                 }
-                return_ans_param = {'res_info': res_info}
-                return_ans_resp = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.post(self.algorithm_info.return_ans_url,
-                                                                                                             json=return_ans_param, headers=login_instance.get_header()))
+                return_ans_param = {
+                    'res_info': res_info,
+                    'algorithm_name': req_info['name'],
+                    'algorithm_version': req_info['version']
+                }
+                return_ans_resp = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.post(self.return_ans_url,
+                                                                                                             json=return_ans_param,
+                                                                                                             headers=login_instance.get_header()))
 
                 if return_ans_resp.status_code != 200 and return_ans_resp.status_code != 201 and return_ans_resp.json()['status'] != 200:
                     err_msg = "Service Result Return Error."
@@ -577,14 +590,21 @@ class Service:
                 # 回传失败数据
                 res_info = {
                     'id': req_info['id'],
+                    'name': req_info['name'],
+                    'version': req_info['version'],
                     'type': req_info['type'],
                     'status': 'error',
                     'owner': req_info['owner'],
                     'create_date': req_info['create_date'],
                     'result': {'err_msg': str(e)}
                 }
-                return_error_param = {'res_info': res_info}
-                await asyncio.get_event_loop().run_in_executor(None, lambda: requests.post(self.algorithm_info.return_err_url, json=return_error_param,
+                return_error_param = {
+                    'res_info': res_info,
+                    'algorithm_name': req_info['name'],
+                    'algorithm_version': req_info['version']
+                }
+                await asyncio.get_event_loop().run_in_executor(None, lambda: requests.post(self.return_err_url,
+                                                                                           json=return_error_param,
                                                                                            headers=login_instance.get_header()))
                 print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
                       '[Service] Return error ans success.')
@@ -640,7 +660,12 @@ class Service:
 
     def is_component_normal(self):
         while (True):
-            if is_component_normal(self.algorithm_config.name, self.algorithm_config.version):
+            res = is_component_normal(self.algorithm_config.name, self.algorithm_config.version)
+            if res['is_component_normal']:
+                self.ask_data_url = res['ask_data_url']
+                self.return_ans_url = res['return_ans_url']
+                self.return_err_url = res['return_err_url']
+                self.gradio_service.gradio_upload_url = res['gradio_upload_url']
                 break
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
                   f'[{self.algorithm_info.upper_name}] Waiting for components started...')
@@ -651,7 +676,7 @@ class Service:
             'algorithm_name': self.algorithm_info.name,
             'algorithm_version': self.algorithm_info.version
         }
-        requests.post(self.algorithm_info.heartbeat_url, data=body, headers=login_instance.get_header())
+        requests.post(config.heartbeat_url, data=body, headers=login_instance.get_header())
 
     async def start(self):
         # 初始化状态

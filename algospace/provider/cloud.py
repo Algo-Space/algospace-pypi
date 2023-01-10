@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-12-13 16:19:45
 @LastEditors: Kermit
-@LastEditTime: 2023-01-04 19:25:46
+@LastEditTime: 2023-01-09 23:22:23
 '''
 
 import traceback
@@ -16,7 +16,7 @@ import time
 import requests
 import json
 from .config_loader import ConfigLoader
-from .config import Algoinfo
+from .config import Algoinfo, get_service_status_url, start_build_url, reset_status_url, get_build_ws_url, start_deploy_url, get_deploy_ws_url, upload_code_url
 from algospace.login import login_instance, login
 from algospace.provider.enroll import enroll
 
@@ -166,9 +166,7 @@ def show_running_log(config_path: str):
 
 def get_service_status(name: str, version: str):
     ''' 获取服务状态 '''
-    algorithm_info = Algoinfo(name, version)
-
-    response = requests.get(algorithm_info.get_service_status_url,
+    response = requests.get(get_service_status_url,
                             params={'algoname': name, 'version': version},
                             headers=login_instance.get_header())
     if response.status_code != 200 and response.status_code != 201:
@@ -197,7 +195,9 @@ def upload_local_file_as_zip(name: str, version: str):
 
         with open(zip_name, 'rb') as f:
             files = {'file': (zip_name, f.read())}
-        response = requests.post(algorithm_info.upload_code_url, files=files, headers=login_instance.get_header())
+        response = requests.post(f'{upload_code_url}/{name}/{version}',
+                                 files=files,
+                                 headers=login_instance.get_header())
         if response.status_code != 200 and response.status_code != 201:
             raise Exception(response.status_code, response.content.decode())
         if response.json()['status'] != 200:
@@ -209,9 +209,7 @@ def upload_local_file_as_zip(name: str, version: str):
 
 def start_build_image(name: str, version: str, config_path: str):
     ''' 开始构建镜像 '''
-    algorithm_info = Algoinfo(name, version)
-
-    response = requests.post(algorithm_info.start_build_url, json={
+    response = requests.post(start_build_url, json={
         'algoname': name,
         'version': version,
         'config_path': config_path,  # TODO: 兼容 windows 路径格式
@@ -224,9 +222,7 @@ def start_build_image(name: str, version: str, config_path: str):
 
 def reset_status_image(name: str, version: str):
     ''' 重置算法状态 '''
-    algorithm_info = Algoinfo(name, version)
-
-    response = requests.post(algorithm_info.reset_status_url, json={
+    response = requests.post(reset_status_url, json={
         'algoname': name,
         'version': version,
     }, headers=login_instance.get_header())
@@ -238,8 +234,6 @@ def reset_status_image(name: str, version: str):
 
 def get_build_log(name: str, version: str, last_log_row_num: int = 0):
     ''' 获取构建日志 '''
-    algorithm_info = Algoinfo(name, version)
-
     def on_message(ws: websocket.WebSocket, message):
         nonlocal last_log_row_num
         result = json.loads(message)
@@ -260,7 +254,7 @@ def get_build_log(name: str, version: str, last_log_row_num: int = 0):
             'last_log_row_num': last_log_row_num,
         }))
 
-    ws = websocket.WebSocketApp(algorithm_info.get_build_ws_url,
+    ws = websocket.WebSocketApp(get_build_ws_url,
                                 header=login_instance.get_header(),
                                 on_open=on_open,
                                 on_message=on_message,
@@ -270,9 +264,7 @@ def get_build_log(name: str, version: str, last_log_row_num: int = 0):
 
 def start_deploy(name: str, version: str):
     ''' 开始部署 '''
-    algorithm_info = Algoinfo(name, version)
-
-    response = requests.post(algorithm_info.start_deploy_url, json={
+    response = requests.post(start_deploy_url, json={
         'algoname': name,
         'version': version,
     }, headers=login_instance.get_header())
@@ -284,7 +276,6 @@ def start_deploy(name: str, version: str):
 
 def get_deploy_log(name: str, version: str, keep_after_success: bool = False, last_log_row_num: int = 0):
     ''' 获取部署日志 '''
-    algorithm_info = Algoinfo(name, version)
 
     def on_message(ws: websocket.WebSocket, message):
         nonlocal last_log_row_num
@@ -310,7 +301,7 @@ def get_deploy_log(name: str, version: str, keep_after_success: bool = False, la
             'last_log_row_num': last_log_row_num,
         }))
 
-    ws = websocket.WebSocketApp(algorithm_info.get_deploy_ws_url,
+    ws = websocket.WebSocketApp(get_deploy_ws_url,
                                 header=login_instance.get_header(),
                                 on_open=on_open,
                                 on_message=on_message,

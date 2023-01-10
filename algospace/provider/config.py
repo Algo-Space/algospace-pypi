@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-24 14:45:40
 @LastEditors: Kermit
-@LastEditTime: 2022-12-31 10:26:06
+@LastEditTime: 2023-01-09 23:23:17
 '''
 
 wait_interval = 1
@@ -15,6 +15,15 @@ call_interval = 0.1
 enroll_url = 'https://algospace.top/core/algo/pypi/enroll'
 verify_config_url = 'https://algospace.top/core/algo/pypi/verify'
 is_component_normal_url = 'https://algospace.top/core/algo/pypi/is_component_normal'
+get_service_status_url = 'https://algospace.top/core/algo/pypi/cloud/status'
+heartbeat_url = 'https://algospace.top/core/heartbeat/send'
+storage_file_url = 'https://algospace.top/core/storage/file'
+start_build_url = 'https://algospace.top/core/algo/build/start'
+reset_status_url = 'https://algospace.top/core/algo/build/reset'
+get_build_ws_url = 'wss://algospace.top/core/algo/build/ws/log'
+start_deploy_url = 'https://algospace.top/core/algo/deploy/start'
+get_deploy_ws_url = 'wss://algospace.top/core/algo/deploy/ws/log'
+upload_code_url = 'https://algospace.top/core/algo/builder/file'
 
 
 class Algoinfo:
@@ -43,65 +52,9 @@ class Algoinfo:
         return self.version.lower()  # 镜像的名称需要限制为 [a-z0-9], 其中可以出现的符号为 [-._]
 
     @property
-    def heartbeat_url(self):
-        return 'https://algospace.top/core/heartbeat/send'
-
-    @property
-    def ask_data_url(self):
-        return f'https://algospace.top/algo/{self.lower_name}/service/ask_data'
-
-    @property
-    def return_ans_url(self):
-        return f'https://algospace.top/algo/{self.lower_name}/service/return_ans'
-
-    @property
-    def return_err_url(self):
-        return f'https://algospace.top/algo/{self.lower_name}/service/error_ans'
-
-    @property
-    def gradio_upload_url(self):
-        return f'https://algospace.top/algo/{self.lower_name}/gradio_worker/upload'
-
-    @property
-    def storage_file_url(self):
-        return 'https://algospace.top/core/storage/file'
-
-    @property
-    def gradio_page(self):
-        return f'https://algospace.top/algo/{self.lower_name}/gradio/'
-
-    @property
     def algorithm_site(self):
         return f'https://algospace.top/algorithm/{self.name}/{self.version}'
 
     @property
     def algorithm_cloud_site(self):
         return self.algorithm_site + '/cloud'
-
-    @property
-    def get_service_status_url(self):
-        return 'https://algospace.top/core/algo/pypi/cloud/status'
-
-    @property
-    def upload_code_url(self):
-        return f'https://algospace.top/core/algo/builder/file/{self.name}/{self.version}'
-
-    @property
-    def start_build_url(self):
-        return 'https://algospace.top/core/algo/build/start'
-
-    @property
-    def reset_status_url(self):
-        return 'https://algospace.top/core/algo/build/reset'
-
-    @property
-    def get_build_ws_url(self):
-        return 'wss://algospace.top/core/algo/build/ws/log'
-
-    @property
-    def start_deploy_url(self):
-        return 'https://algospace.top/core/algo/deploy/start'
-
-    @property
-    def get_deploy_ws_url(self):
-        return 'wss://algospace.top/core/algo/deploy/ws/log'
