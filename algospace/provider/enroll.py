@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-01-09 22:56:13
+@LastEditTime: 2023-01-10 17:34:33
 '''
 
 from .config import enroll_url, verify_config_url, is_component_normal_url
@@ -91,12 +91,14 @@ def is_component_normal(name: str, version: str):
         raise Exception(resp.json().get('err_msg', 'Get component status error.'))
     is_component_normal = resp.json()['data'].get('is_component_normal')
     ask_data_url = resp.json()['data'].get('ask_data_url')
+    ws_ask_data_url = resp.json()['data'].get('ws_ask_data_url')
     return_ans_url = resp.json()['data'].get('return_ans_url')
     return_err_url = resp.json()['data'].get('return_err_url')
     gradio_upload_url = resp.json()['data'].get('gradio_upload_url')
     return {
         'is_component_normal': is_component_normal,
         'ask_data_url': ask_data_url,
+        'ws_ask_data_url': ws_ask_data_url,
         'return_ans_url': return_ans_url,
         'return_err_url': return_err_url,
         'gradio_upload_url': gradio_upload_url,

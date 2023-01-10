@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-01-10 11:27:56
+@LastEditTime: 2023-01-10 21:43:46
 '''
 
 from typing import Callable, Optional, List, Tuple
@@ -22,6 +22,7 @@ import concurrent.futures
 import socket
 import traceback
 import requests
+import websocket
 from algospace.login import login, login_instance
 from .config_loader import ConfigLoader, valid_param_type
 from .enroll import enroll, verify_config, is_component_normal
@@ -414,9 +415,11 @@ class Service:
     def __init__(
         self,
         config_path: str,
+        fetch_mode: str,
     ):
         self.algorithm_config = ConfigLoader(config_path)
         self.algorithm_info = Algoinfo(self.algorithm_config.name, self.algorithm_config.version)
+        self.fetch_mode = fetch_mode
 
         self.login_headers = {}
         self.login_headers_timestamp = 0
@@ -469,52 +472,132 @@ class Service:
         self.algorithm_config.gradio_server_port = gradio_port
 
         # 开始处理
+        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}] [Service] Running in {self.fetch_mode} mode.')
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}] [Service] Your algorithm site: {self.algorithm_info.algorithm_site}')
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}] [Service] Start handling...')
         print('')
 
-        async def start():
-            parallel = {
-                'max': self.algorithm_config.service_max_parallel,
-                'curr': 0,
-            }
-            loop = asyncio.get_event_loop()
-            while True:
-                while parallel['curr'] >= parallel['max']:
+        parallel = {
+            'max': self.algorithm_config.service_max_parallel,
+            'curr': 0,
+        }
+
+        def is_parallel_full():
+            return parallel['curr'] >= parallel['max']
+
+        def add_parallel(is_full: bool = False):
+            parallel['curr'] += 1 if not is_full else parallel['max']
+
+        def minus_parallel(is_full: bool = False):
+            parallel['curr'] -= 1 if not is_full else parallel['max']
+
+        def get_rest_parallel():
+            return parallel['max'] - parallel['curr']
+
+        if self.fetch_mode == 'listen':
+            def on_init():
+                while is_parallel_full():
                     # 并行数达到上限，等待
-                    await asyncio.sleep(config.wait_interval)
+                    time.sleep(config.wait_interval)
+                return get_rest_parallel()
 
-                # 请求消息
-                try:
-                    req_info = await self.ask_data()
-                    if req_info is None:
-                        await asyncio.sleep(config.wait_interval)
-                        continue
-                except Exception as e:
-                    traceback.print_exc()
-                    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                          '[Service] Ask data error:', str(e))
-                    await asyncio.sleep(config.wait_interval)
-                    continue
-
+            def on_req(req_info: dict, loop: asyncio.AbstractEventLoop):
                 # 处理请求
                 try:
-                    loop.create_task(self.handle(req_info, fn_lock_list,
-                                     fn_req_queue_list, fn_res_queue_list, parallel))
-                    await asyncio.sleep(config.call_interval)
+                    add_parallel(req_info['type'] == 'gradio_init')
+                    future = asyncio.run_coroutine_threadsafe(self.handle(req_info, fn_lock_list,
+                                                                          fn_req_queue_list, fn_res_queue_list), loop)
+                    future.add_done_callback(lambda task: minus_parallel(
+                        req_info['type'] == 'gradio_init'))  # type: ignore
                 except Exception as e:
                     traceback.print_exc()
                     print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
                           '[Service] Create handle task error:', str(e))
-                    await asyncio.sleep(config.wait_interval)
 
-        asyncio.run(start())
+                while is_parallel_full():
+                    # 并行数达到上限，等待
+                    time.sleep(config.wait_interval)
+                return get_rest_parallel()
 
-    async def ask_data(self):
+            asyncio.run(self.ws_ask_data(on_init, on_req))
+
+        elif self.fetch_mode == 'poll':
+            async def start():
+                loop = asyncio.get_event_loop()
+                while True:
+                    while is_parallel_full():
+                        # 并行数达到上限，等待
+                        await asyncio.sleep(config.wait_interval)
+
+                    # 请求消息
+                    try:
+                        req_info = await self.ask_data()
+                        if req_info is None:
+                            await asyncio.sleep(config.wait_interval)
+                            continue
+                    except Exception as e:
+                        traceback.print_exc()
+                        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                              '[Service] Ask data error:', str(e))
+                        await asyncio.sleep(config.wait_interval)
+                        continue
+
+                    # 处理请求
+                    try:
+                        add_parallel(req_info['type'] == 'gradio_init')
+                        future = loop.create_task(self.handle(req_info, fn_lock_list,
+                                                              fn_req_queue_list, fn_res_queue_list))
+                        future.add_done_callback(lambda task: minus_parallel(
+                            req_info['type'] == 'gradio_init'))  # type: ignore
+                        await asyncio.sleep(config.call_interval)
+                    except Exception as e:
+                        traceback.print_exc()
+                        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                              '[Service] Create handle task error:', str(e))
+                        await asyncio.sleep(config.wait_interval)
+
+            asyncio.run(start())
+
+    async def ws_ask_data(self, on_init: Callable, on_req: Callable):
+        loop = asyncio.get_event_loop()
+
+        def on_message(ws: websocket.WebSocket, message):
+            # websocket-client 限制消息体大小 64kb，需要注意
+            result: dict = json.loads(message)
+            if result.get('ack'):
+                rest_parallel = on_init()
+                ws.send(json.dumps({
+                    'rest_parallel': rest_parallel,
+                }))
+            else:
+                req_info = result['req_info']
+                rest_parallel = on_req(req_info, loop)
+                ws.send(json.dumps({
+                    'rest_parallel': rest_parallel,
+                }))
+
+        def on_open(ws: websocket.WebSocket):
+            ws.send(json.dumps({
+                'algorithm_name': self.algorithm_info.name,
+                'algorithm_version': self.algorithm_info.version,
+            }))
+
+        ws = websocket.WebSocketApp(self.ws_ask_data_url,
+                                    header=login_instance.get_header(),
+                                    on_open=on_open,
+                                    on_message=on_message)
+
+        await loop.run_in_executor(None, ws.run_forever)
+
+        await asyncio.sleep(config.wait_interval)
+        await self.ws_ask_data(on_init, on_req)
+
+    async def ask_data(self, id: Optional[str] = None) -> Optional[dict]:
         ask_for_data_resp = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.get(self.ask_data_url,
                                                                                                       params={
                                                                                                           'algorithm_name': self.algorithm_info.name,
                                                                                                           'algorithm_version': self.algorithm_info.version,
+                                                                                                          **({'id': id} if id else {}),
                                                                                                       },
                                                                                                       headers=login_instance.get_header()))
         if ask_for_data_resp.status_code != 200 and ask_for_data_resp.status_code != 201:
@@ -525,10 +608,10 @@ class Service:
             return
         if ask_for_data_dict['status'] != 200:
             raise Exception('the response', ask_for_data_dict)
-        req_info = ask_for_data_dict.get('data', {})
-        if type(req_info) != dict:
+        req_data = ask_for_data_dict.get('data', {})
+        if type(req_data) != dict:
             raise Exception('the property of \'data\' is not dict.')
-        req_info = req_info.get('req_info', {})
+        req_info = req_data.get('req_info', {})
         if type(req_info) != dict:
             raise Exception('the property of \'req_info\' is not dict.')
         return req_info
@@ -537,11 +620,26 @@ class Service:
                      req_info: dict,
                      fn_lock_list: List[Lock],
                      fn_req_queue_list: List[multiprocessing.Queue],
-                     fn_res_queue_list: List[multiprocessing.Queue],
-                     parallel: dict):
+                     fn_res_queue_list: List[multiprocessing.Queue]):
         try:
-            parallel['curr'] += 1
             try:
+                if type(req_info['data']) != dict:
+                    req_id = req_info['id']
+                    full_req_info = None
+                    retry_times = 0
+                    max_retry_times = 5
+                    while not full_req_info:
+                        if retry_times >= max_retry_times:
+                            raise Exception(f'Algo req \'{req_id}\' is not found.')
+                        try:
+                            full_req_info = await self.ask_data(req_id)
+                        except:
+                            pass
+                        finally:
+                            retry_times += 1
+                            await asyncio.sleep(config.wait_interval * retry_times)
+                    req_info = full_req_info
+
                 # 根据请求类型处理
                 if req_info['type'] == 'api':
                     # 处理计算请求
@@ -551,11 +649,7 @@ class Service:
                     result = await self.gradio_service.handle(req_info['data'])
                 elif req_info['type'] == 'gradio_init':
                     # 处理 Gradio 初始化请求
-                    try:
-                        parallel['curr'] += parallel['max']  # 初始化时要阻塞所有并行请求
-                        result = await self.gradio_service.handle_init()
-                    finally:
-                        parallel['curr'] -= parallel['max']
+                    result = await self.gradio_service.handle_init()
                 else:
                     result = {}
 
@@ -611,8 +705,6 @@ class Service:
         except Exception as e:
             traceback.print_exc()
             print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Service] Handle error:', str(e))
-        finally:
-            parallel['curr'] -= 1
 
     def login(self):
         if not login(self.algorithm_config.username, self.algorithm_config.password):
@@ -663,6 +755,7 @@ class Service:
             res = is_component_normal(self.algorithm_config.name, self.algorithm_config.version)
             if res['is_component_normal']:
                 self.ask_data_url = res['ask_data_url']
+                self.ws_ask_data_url = res['ws_ask_data_url']
                 self.return_ans_url = res['return_ans_url']
                 self.return_err_url = res['return_err_url']
                 self.gradio_service.gradio_upload_url = res['gradio_upload_url']
@@ -804,11 +897,11 @@ class Service:
             task.result()
 
 
-def run_service(config_path: str) -> None:
+def run_service(config_path: str, fetch_mode: str = 'listen') -> None:
     loop = asyncio.get_event_loop()
     try:
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Init.')
-        service = Service(config_path)
+        service = Service(config_path, fetch_mode)
         loop.run_until_complete(service.start())
     except:
         traceback.print_exc()

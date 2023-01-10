@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2022-12-31 12:57:49
+@LastEditTime: 2023-01-10 16:36:26
 '''
 
 from argparse import ArgumentParser
@@ -15,6 +15,7 @@ class ArgNamespace:
     command = 'command'
     version = 'version'
     config_path = 'config_path'
+    start_fetch_mode = 'start_fetch_mode'
     generate_type = 'generate_type'
     generate_debian_mirror = 'generate_debian_mirror'
     generate_use_buildkit_debian_cache = 'generate_use_buildkit_debian_cache'
@@ -48,6 +49,12 @@ def run():
                               required=False,
                               default='algospace-config.py',
                               help='algospace-config.py 配置文件路径')
+    start_parser.add_argument('--fetch-mode',
+                              dest=ArgNamespace.start_fetch_mode,
+                              metavar='<listen,poll>',
+                              choices=['listen', 'poll'],
+                              default='listen',
+                              help='请求获取模式')
     # generate 命令参数
     generate_parser.add_argument('-c',
                                  '--config',
@@ -120,7 +127,7 @@ def run():
 
     elif args.command == 'start':
         from algospace.provider.service import run_service
-        run_service(args.config_path)
+        run_service(args.config_path, args.start_fetch_mode)
 
     elif args.command == 'generate':
         from algospace.provider.docker_generator import generate_docker_config
