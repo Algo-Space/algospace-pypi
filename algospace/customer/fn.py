@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-11 15:47:20
 @LastEditors: Kermit
-@LastEditTime: 2023-01-10 23:12:45
+@LastEditTime: 2023-01-11 10:04:03
 '''
 
 from typing import Optional, Callable
@@ -102,8 +102,8 @@ class AlgoFunction:
             raise Exception('This algorithm is not callable now because the provider closed the service.')
 
         kwargs = {
-            '__algo_name__': self.name,
-            '__algo_version__': self.version,
+            '__algo_name__': info['name'],
+            '__algo_version__': info['version'],
         }
         for index, arg in enumerate(args):
             if len(input_param) == index:

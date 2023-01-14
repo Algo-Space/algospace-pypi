@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-12-13 16:19:45
 @LastEditors: Kermit
-@LastEditTime: 2023-01-09 23:22:23
+@LastEditTime: 2023-01-11 09:08:57
 '''
 
 import traceback
@@ -244,7 +244,7 @@ def get_build_log(name: str, version: str, last_log_row_num: int = 0):
         if close_status_code and close_status_code != 1000 and close_status_code < 4000:
             # 非应用的异常码则重新连接
             get_build_log(name, version, last_log_row_num)
-        else:
+        elif close_status_code != 1000:
             print(f'Get log error: {close_status_code} {close_msg}')
 
     def on_open(ws: websocket.WebSocket):
@@ -290,7 +290,7 @@ def get_deploy_log(name: str, version: str, keep_after_success: bool = False, la
         if close_status_code and close_status_code != 1000 and close_status_code < 4000:
             # 非应用的异常码则重新连接
             get_deploy_log(name, version, keep_after_success, last_log_row_num)
-        else:
+        elif close_status_code != 1000:
             print(f'Get log error: {close_status_code} {close_msg}')
 
     def on_open(ws: websocket.WebSocket):

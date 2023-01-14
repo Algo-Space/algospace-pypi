@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-01-10 21:43:46
+@LastEditTime: 2023-01-14 12:30:35
 '''
 
 from typing import Callable, Optional, List, Tuple
@@ -559,38 +559,39 @@ class Service:
             asyncio.run(start())
 
     async def ws_ask_data(self, on_init: Callable, on_req: Callable):
-        loop = asyncio.get_event_loop()
+        try:
+            loop = asyncio.get_event_loop()
 
-        def on_message(ws: websocket.WebSocket, message):
-            # websocket-client 限制消息体大小 64kb，需要注意
-            result: dict = json.loads(message)
-            if result.get('ack'):
-                rest_parallel = on_init()
+            def on_message(ws: websocket.WebSocket, message):
+                # websocket-client 限制消息体大小 64kb，需要注意
+                result: dict = json.loads(message)
+                if result.get('ack'):
+                    rest_parallel = on_init()
+                    ws.send(json.dumps({
+                        'rest_parallel': rest_parallel,
+                    }))
+                else:
+                    req_info = result['req_info']
+                    rest_parallel = on_req(req_info, loop)
+                    ws.send(json.dumps({
+                        'rest_parallel': rest_parallel,
+                    }))
+
+            def on_open(ws: websocket.WebSocket):
                 ws.send(json.dumps({
-                    'rest_parallel': rest_parallel,
-                }))
-            else:
-                req_info = result['req_info']
-                rest_parallel = on_req(req_info, loop)
-                ws.send(json.dumps({
-                    'rest_parallel': rest_parallel,
+                    'algorithm_name': self.algorithm_info.name,
+                    'algorithm_version': self.algorithm_info.version,
                 }))
 
-        def on_open(ws: websocket.WebSocket):
-            ws.send(json.dumps({
-                'algorithm_name': self.algorithm_info.name,
-                'algorithm_version': self.algorithm_info.version,
-            }))
+            ws = websocket.WebSocketApp(self.ws_ask_data_url,
+                                        header=login_instance.get_header(),
+                                        on_open=on_open,
+                                        on_message=on_message)
 
-        ws = websocket.WebSocketApp(self.ws_ask_data_url,
-                                    header=login_instance.get_header(),
-                                    on_open=on_open,
-                                    on_message=on_message)
-
-        await loop.run_in_executor(None, ws.run_forever)
-
-        await asyncio.sleep(config.wait_interval)
-        await self.ws_ask_data(on_init, on_req)
+            await loop.run_in_executor(None, ws.run_forever)
+        finally:
+            await asyncio.sleep(config.wait_interval)
+            await self.ws_ask_data(on_init, on_req)
 
     async def ask_data(self, id: Optional[str] = None) -> Optional[dict]:
         ask_for_data_resp = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.get(self.ask_data_url,
@@ -906,5 +907,4 @@ def run_service(config_path: str, fetch_mode: str = 'listen') -> None:
     except:
         traceback.print_exc()
     finally:
-        loop.close()
         print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Exit.')
