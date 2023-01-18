@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-24 14:45:40
 @LastEditors: Kermit
-@LastEditTime: 2023-01-09 23:23:17
+@LastEditTime: 2023-01-18 12:12:39
 '''
 
 wait_interval = 1
@@ -23,7 +23,7 @@ reset_status_url = 'https://algospace.top/core/algo/build/reset'
 get_build_ws_url = 'wss://algospace.top/core/algo/build/ws/log'
 start_deploy_url = 'https://algospace.top/core/algo/deploy/start'
 get_deploy_ws_url = 'wss://algospace.top/core/algo/deploy/ws/log'
-upload_code_url = 'https://algospace.top/core/algo/builder/file'
+upload_code_url = 'https://ruc.algospace.top:4443/core/algo/builder/file'
 
 
 class Algoinfo:
