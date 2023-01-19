@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-11 13:21:18
 @LastEditors: Kermit
-@LastEditTime: 2023-01-06 15:43:49
+@LastEditTime: 2023-01-19 14:16:05
 '''
 
 import traceback
@@ -143,6 +143,10 @@ def gen_dockerfile(pre_command: list[str],
             pre_command_lines += '    echo "deb http://mirrors.tuna.tsinghua.edu.cn/debian-security/ stretch/updates main non-free contrib" >> /etc/apt/sources.list && \\\n'
             pre_command_lines += '    echo "deb-src http://mirrors.tuna.tsinghua.edu.cn/debian-security/ stretch/updates main non-free contrib" >> /etc/apt/sources.list && \\\n'
             pre_command_lines += '    apt update && \\\n'
+            is_curr_first_pre_command_line = False
+        else:
+            pre_command_lines += '    ' if not is_curr_first_pre_command_line else ''
+            pre_command_lines += 'apt update && \\\n'
             is_curr_first_pre_command_line = False
 
         for index, command_item in enumerate(pre_command):
