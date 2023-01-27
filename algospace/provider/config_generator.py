@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-07 17:30:04
 @LastEditors: Kermit
-@LastEditTime: 2022-12-21 16:49:55
+@LastEditTime: 2023-01-23 22:36:44
 '''
 
 import os
@@ -17,7 +17,7 @@ def generate_config():
         if os.path.exists('algospace-config.py'):
             print('[AlgoSpace] Init Error: \'algospace-config.py\' exists.')
             return
-        with open(os.path.join(os.path.split(__file__)[0], 'templates', 'algospace-config.py'), 'r') as f:
+        with open(os.path.join(os.path.split(__file__)[0], 'templates', 'algospace-config.py'), 'r', encoding='utf-8') as f:
             template = f.read()
         with open('algospace-config.py', 'w') as f:
             f.write(template)

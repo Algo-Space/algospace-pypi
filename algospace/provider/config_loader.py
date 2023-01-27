@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 20:19:06
 @LastEditors: Kermit
-@LastEditTime: 2022-12-12 18:42:35
+@LastEditTime: 2023-01-23 22:36:07
 '''
 
 import os
@@ -29,7 +29,7 @@ class ConfigLoader:
         sys.path.insert(0, config_dirpath)
         config = __import__(config_filename_noext)
         sys.path.pop(0)
-        with open(config_path, 'r') as f:
+        with open(config_path, 'r', encoding='utf-8') as f:
             self.config_file_content = f.read()
             self.config_dirpath = config_dirpath
 
@@ -240,7 +240,7 @@ class ConfigLoader:
         if not self._is_document_file_exist():
             return False
         document_filepath = os.path.join(self.config_dirpath, self.document_filepath)
-        with open(document_filepath, 'r') as f:
+        with open(document_filepath, 'r', encoding='utf-8') as f:
             self.document = f.read()
         return True
 
