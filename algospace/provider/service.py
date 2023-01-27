@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-01-14 12:30:35
+@LastEditTime: 2023-01-27 18:22:01
 '''
 
 from typing import Callable, Optional, List, Tuple
@@ -519,7 +519,10 @@ class Service:
                     time.sleep(config.wait_interval)
                 return get_rest_parallel()
 
-            asyncio.run(self.ws_ask_data(on_init, on_req))
+            while True:
+                # 断开会重连
+                asyncio.run(self.ws_ask_data(on_init, on_req))
+                time.sleep(config.wait_interval)
 
         elif self.fetch_mode == 'poll':
             async def start():
@@ -589,9 +592,10 @@ class Service:
                                         on_message=on_message)
 
             await loop.run_in_executor(None, ws.run_forever)
-        finally:
-            await asyncio.sleep(config.wait_interval)
-            await self.ws_ask_data(on_init, on_req)
+        except Exception as e:
+            traceback.print_exc()
+            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
+                  '[Service] Websocket ask data error:', str(e))
 
     async def ask_data(self, id: Optional[str] = None) -> Optional[dict]:
         ask_for_data_resp = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.get(self.ask_data_url,
