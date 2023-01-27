@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-11 13:21:18
 @LastEditors: Kermit
-@LastEditTime: 2023-01-19 14:16:05
+@LastEditTime: 2023-01-23 22:36:16
 '''
 
 import traceback
@@ -62,7 +62,7 @@ def gen_dockerfile(pre_command: list[str],
                    generate_debian_mirror: str = '',
                    use_buildkit_debian_cache: bool = False,
                    use_buildkit_pip_cache: bool = False):
-    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'algospace-dockerfile'), 'r') as f:
+    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'algospace-dockerfile'), 'r', encoding='utf-8') as f:
         template = f.read()
 
     template = template.replace('{BASE_IMAGE}', base_image)
@@ -162,7 +162,7 @@ def gen_dockerfile(pre_command: list[str],
 
 
 def gen_docker_compose(name: str, version: str, lower_name: str):
-    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'algospace-docker-compose.yml'), 'r') as f:
+    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'algospace-docker-compose.yml'), 'r', encoding='utf-8') as f:
         template = f.read()
 
     template = template.replace('{ALGORITHM_LOWER_NAME}', lower_name)
@@ -174,19 +174,19 @@ def gen_docker_compose(name: str, version: str, lower_name: str):
 
 
 def gen_control_script(name: str, version: str):
-    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'algospace-docker-start.sh'), 'r') as f:
+    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'algospace-docker-start.sh'), 'r', encoding='utf-8') as f:
         template = f.read()
     with open(os.path.join('algospace-docker-start.sh'), 'w') as f:
         template = template.replace('{ALGORITHM_NAME}', name)
         template = template.replace('{ALGORITHM_VERSION}', version)
         f.write(template)
 
-    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'algospace-docker-stop.sh'), 'r') as f:
+    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'algospace-docker-stop.sh'), 'r', encoding='utf-8') as f:
         template = f.read()
     with open(os.path.join('algospace-docker-stop.sh'), 'w') as f:
         f.write(template)
 
-    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'algospace-docker-logs.sh'), 'r') as f:
+    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'algospace-docker-logs.sh'), 'r', encoding='utf-8') as f:
         template = f.read()
     with open(os.path.join('algospace-docker-logs.sh'), 'w') as f:
         f.write(template)

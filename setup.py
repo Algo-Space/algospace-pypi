@@ -5,14 +5,14 @@
 @Author: Kermit
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-12-21 15:32:49
+@LastEditTime: 2023-01-23 22:35:57
 '''
 
 from setuptools import setup, find_packages
 from os import path
 
 name = 'algospace'
-with open(path.join(name, 'version.txt'), 'r') as f:
+with open(path.join(name, 'version.txt'), 'r', encoding='utf-8') as f:
     version = f.read().strip()
 
 setup(
