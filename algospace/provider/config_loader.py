@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 20:19:06
 @LastEditors: Kermit
-@LastEditTime: 2023-01-23 22:36:07
+@LastEditTime: 2023-02-02 22:48:41
 '''
 
 import os
@@ -14,7 +14,26 @@ import re
 from typing import Callable, Optional
 from algospace.exceptions import ConfigError
 
-valid_param_type = ['str', 'int', 'float', 'image_path', 'video_path', 'voice_path']
+
+class ParamType:
+    STRING = 'str'
+    INTEGER = 'int'
+    FLOAT = 'float'
+    IMAGE_PATH = 'image_path'
+    VIDEO_PATH = 'video_path'
+    VOICE_PATH = 'voice_path'
+
+
+class InputType(ParamType):
+    pass
+
+
+class OutputType(ParamType):
+    pass
+
+
+valid_input_type = [getattr(InputType, x) for x in dir(InputType) if not x.startswith('__')]
+valid_output_type = [getattr(OutputType, x) for x in dir(OutputType) if not x.startswith('__')]
 
 
 class ConfigLoader:
@@ -118,9 +137,9 @@ class ConfigLoader:
                 raise ConfigError(f'ConfigError: key \'{str(key)}\' in \'service_input\' is not str.')
             if type(info) != dict:
                 raise ConfigError(f'ConfigError: value of \'{str(key)}\' in \'service_input\' is not dict.')
-            if info.get('type', '') not in valid_param_type:
+            if info.get('type', '') not in valid_input_type:
                 raise ConfigError(
-                    f'ConfigError: type of \'{str(key)}\' in \'service_input\' is not in {str(valid_param_type)}.')
+                    f'ConfigError: type of \'{str(key)}\' in \'service_input\' is not in {str(valid_input_type)}.')
             info['describe'] = str(info.get('describe', ''))
 
         if type(self.service_output) != dict:
@@ -132,9 +151,9 @@ class ConfigLoader:
                 raise ConfigError(f'ConfigError: key \'{str(key)}\' in \'service_output\' is not str.')
             if type(info) != dict:
                 raise ConfigError(f'ConfigError: value of \'{str(key)}\' in \'service_output\' is not dict.')
-            if info.get('type', '') not in valid_param_type:
+            if info.get('type', '') not in valid_output_type:
                 raise ConfigError(
-                    f'ConfigError: type of \'{str(key)}\' in \'service_output\' is not in {str(valid_param_type)}.')
+                    f'ConfigError: type of \'{str(key)}\' in \'service_output\' is not in {str(valid_output_type)}.')
             info['describe'] = str(info.get('describe', ''))
 
         if type(self.service_max_parallel) != int:

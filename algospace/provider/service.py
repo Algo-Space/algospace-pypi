@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-01-27 18:22:01
+@LastEditTime: 2023-02-02 22:52:42
 '''
 
 from typing import Callable, Optional, List, Tuple
@@ -24,7 +24,7 @@ import traceback
 import requests
 import websocket
 from algospace.login import login, login_instance
-from .config_loader import ConfigLoader, valid_param_type
+from .config_loader import ConfigLoader, InputType, OutputType, valid_input_type, valid_output_type
 from .enroll import enroll, verify_config, is_component_normal
 from .stdio import GradioPrint, QueueStdIO, QueueStdIOExec
 import shutil
@@ -129,40 +129,40 @@ class ApiService:
 
         return path
 
-    def get_input_type_class(self, type: str, ) -> Callable:
+    def get_input_type_class(self, input_type: str) -> Callable:
         ''' 获取处理每种类型的 Callable 对象 '''
-        if type not in valid_param_type:
-            raise Exception(f'Param type \'{type}\' is not available.')
-        elif type == 'str':
+        if input_type not in valid_input_type:
+            raise Exception(f'Input type \'{input_type}\' is not available.')
+        elif input_type == InputType.STRING:
             return str
-        elif type == 'int':
+        elif input_type == InputType.INTEGER:
             return int
-        elif type == 'float':
+        elif input_type == InputType.FLOAT:
             return float
-        elif type == 'image_path':
+        elif input_type == InputType.IMAGE_PATH:
             return self.read_file
-        elif type == 'video_path':
+        elif input_type == InputType.VIDEO_PATH:
             return self.read_file
-        elif type == 'voice_path':
+        elif input_type == InputType.VOICE_PATH:
             return self.read_file
         else:
             return str
 
-    def get_output_type_class(self, type: str, ) -> Callable:
+    def get_output_type_class(self, output_type: str) -> Callable:
         ''' 获取处理每种类型的 Callable 对象 '''
-        if type not in valid_param_type:
-            raise Exception(f'Param type \'{type}\' is not available.')
-        elif type == 'str':
+        if output_type not in valid_output_type:
+            raise Exception(f'Output type \'{output_type}\' is not available.')
+        elif output_type == OutputType.STRING:
             return str
-        elif type == 'int':
+        elif output_type == OutputType.INTEGER:
             return int
-        elif type == 'float':
+        elif output_type == OutputType.FLOAT:
             return float
-        elif type == 'image_path':
+        elif output_type == OutputType.IMAGE_PATH:
             return self.write_file
-        elif type == 'video_path':
+        elif output_type == OutputType.VIDEO_PATH:
             return self.write_file
-        elif type == 'voice_path':
+        elif output_type == OutputType.VOICE_PATH:
             return self.write_file
         else:
             return str
@@ -215,21 +215,40 @@ class GradioService:
         self.algorithm_info = algorithm_info
         self.gradio_upload_url = None
 
-    def get_type_component(self, type: str, describe: str):
+    def get_input_component(self, input_type: str, describe: str):
         ''' 获取处理每种类型的 Gradio component '''
-        if type not in valid_param_type:
-            raise Exception(f'Param type \'{type}\' is not available.')
-        elif type == 'str':
+        if input_type not in valid_input_type:
+            raise Exception(f'Input type \'{input_type}\' is not available.')
+        elif input_type == InputType.STRING:
             return gr.Textbox(placeholder=describe, label=describe)
-        elif type == 'int':
+        elif input_type == InputType.INTEGER:
             return gr.Number(precision=0, label=describe)
-        elif type == 'float':
+        elif input_type == InputType.FLOAT:
             return gr.Number(label=describe)
-        elif type == 'image_path':
+        elif input_type == InputType.IMAGE_PATH:
             return gr.Image(type='filepath', label=describe)
-        elif type == 'video_path':
+        elif input_type == InputType.VIDEO_PATH:
             return gr.Video(type='filepath', label=describe)
-        elif type == 'voice_path':
+        elif input_type == InputType.VOICE_PATH:
+            return gr.Audio(type='filepath', label=describe)
+        else:
+            return gr.Textbox(placeholder=describe)
+
+    def get_output_component(self, output_type: str, describe: str):
+        ''' 获取处理每种类型的 Gradio component '''
+        if output_type not in valid_output_type:
+            raise Exception(f'Output type \'{output_type}\' is not available.')
+        elif output_type == OutputType.STRING:
+            return gr.Textbox(placeholder=describe, label=describe)
+        elif output_type == OutputType.INTEGER:
+            return gr.Number(precision=0, label=describe)
+        elif output_type == OutputType.FLOAT:
+            return gr.Number(label=describe)
+        elif output_type == OutputType.IMAGE_PATH:
+            return gr.Image(type='filepath', label=describe)
+        elif output_type == OutputType.VIDEO_PATH:
+            return gr.Video(type='filepath', label=describe)
+        elif output_type == OutputType.VOICE_PATH:
             return gr.Audio(type='filepath', label=describe)
         else:
             return gr.Textbox(placeholder=describe)
@@ -264,10 +283,10 @@ class GradioService:
 
         inputs = []
         for _, info in self.algorithm_config.service_input.items():
-            inputs.append(self.get_type_component(info['type'], info['describe']))
+            inputs.append(self.get_input_component(info['type'], info['describe']))
         outputs = []
         for _, info in self.algorithm_config.service_output.items():
-            outputs.append(self.get_type_component(info['type'], info['describe']))
+            outputs.append(self.get_output_component(info['type'], info['describe']))
 
         gr_interface = gr.Interface(
             title=self.algorithm_info.full_name,

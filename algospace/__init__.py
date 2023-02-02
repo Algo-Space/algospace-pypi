@@ -5,6 +5,9 @@ AlgoSpace: A platform for displaying algorithm achievements
 import pkgutil
 
 from algospace.__main__ import run
+
+from algospace.provider.config_loader import InputType, OutputType
+
 from algospace.customer.service import login
 from algospace.customer.service import info
 from algospace.customer.service import fn

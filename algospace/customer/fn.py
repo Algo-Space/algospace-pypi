@@ -5,19 +5,16 @@
 @Author: Kermit
 @Date: 2022-11-11 15:47:20
 @LastEditors: Kermit
-@LastEditTime: 2023-01-11 10:04:03
+@LastEditTime: 2023-02-02 22:49:10
 '''
 
 from typing import Optional, Callable
 from algospace.login import login_instance
 import os
-import json
-import time
 import requests
-import traceback
 from . import config
 from algospace.exceptions import CallException, TimeOutException
-from algospace.provider.config_loader import valid_param_type
+from algospace.provider.config_loader import InputType, OutputType, valid_input_type, valid_output_type
 
 
 class AlgoFunction:
@@ -54,40 +51,42 @@ class AlgoFunction:
         upload_url = f'{config.storage_file_url}/{path}'
         return upload_url
 
-    def get_input_type_class(self, type: str, ) -> Callable:
+    def get_input_type_class(self, input_type: str) -> Callable:
         ''' 获取处理每种类型的 Callable 对象 '''
-        if type not in valid_param_type:
-            raise Exception(f'Param type \'{type}\' is not available. Please try to update your algospace version.')
-        elif type == 'str':
+        if input_type not in valid_input_type:
+            raise Exception(
+                f'Input type \'{input_type}\' is not available. Please try to update your algospace version.')
+        elif input_type == InputType.STRING:
             return str
-        elif type == 'int':
+        elif input_type == InputType.INTEGER:
             return int
-        elif type == 'float':
+        elif input_type == InputType.FLOAT:
             return float
-        elif type == 'image_path':
+        elif input_type == InputType.IMAGE_PATH:
             return self.write_file
-        elif type == 'video_path':
+        elif input_type == InputType.VIDEO_PATH:
             return self.write_file
-        elif type == 'voice_path':
+        elif input_type == InputType.VOICE_PATH:
             return self.write_file
         else:
             return str
 
-    def get_output_type_class(self, type: str, ) -> Callable:
+    def get_output_type_class(self, output_type: str) -> Callable:
         ''' 获取处理每种类型的 Callable 对象 '''
-        if type not in valid_param_type:
-            raise Exception(f'Param type \'{type}\' is not available. Please try to update your algospace version.')
-        elif type == 'str':
+        if output_type not in valid_output_type:
+            raise Exception(
+                f'Output type \'{output_type}\' is not available. Please try to update your algospace version.')
+        elif output_type == OutputType.STRING:
             return str
-        elif type == 'int':
+        elif output_type == OutputType.INTEGER:
             return int
-        elif type == 'float':
+        elif output_type == OutputType.FLOAT:
             return float
-        elif type == 'image_path':
+        elif output_type == OutputType.IMAGE_PATH:
             return self.convert_url
-        elif type == 'video_path':
+        elif output_type == OutputType.VIDEO_PATH:
             return self.convert_url
-        elif type == 'voice_path':
+        elif output_type == OutputType.VOICE_PATH:
             return self.convert_url
         else:
             return str
