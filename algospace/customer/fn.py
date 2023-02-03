@@ -5,16 +5,18 @@
 @Author: Kermit
 @Date: 2022-11-11 15:47:20
 @LastEditors: Kermit
-@LastEditTime: 2023-02-02 22:49:10
+@LastEditTime: 2023-02-03 21:04:23
 '''
 
 from typing import Optional, Callable
 from algospace.login import login_instance
 import os
+import re
 import requests
 from . import config
 from algospace.exceptions import CallException, TimeOutException
 from algospace.provider.config_loader import InputType, OutputType, valid_input_type, valid_output_type
+import base64
 
 
 class AlgoFunction:
@@ -27,24 +29,24 @@ class AlgoFunction:
         self.info = None
         pass
 
-    def write_file(self, local_path: str) -> str:
-        ''' 将本地 path 转换为 storage 返回的 path '''
-        filename = os.path.split(local_path)[-1]
-        with open(local_path, 'rb') as f:
-            files = {'file': (filename, f.read())}
-
-        info = self.get_info()
-        upload_url = f'{config.storage_file_url}/{info["name"]}/{info["version"]}'
-        response = requests.post(upload_url, files=files, headers=login_instance.get_header())
-        if response.status_code != 200 and response.status_code != 201 and response.json()['status'] != 200:
-            raise Exception('Failed to write file.')
-        if type(response.json()['data']) != dict:
-            raise Exception('Write file success but response has no \'data\'.')
-        path = response.json()['data'].get('filepath')
-        if path is None:
-            raise Exception('Write file success but response has no \'filepath\'.')
-
-        return path
+    def convert_file_dict(self, local_path: str) -> dict:
+        ''' 将本地 path 转换为 file 字典 '''
+        if local_path.startswith('http'):
+            format = re.sub(r'\?.*$', '', os.path.splitext(local_path)[-1].replace('.', ''))
+            return {
+                'type': 'url',
+                'data': local_path,
+                'format': format,
+            }
+        else:
+            format = os.path.splitext(local_path)[-1].replace('.', '')
+            with open(local_path, 'rb') as f:
+                base64_data = base64.b64encode(f.read())
+            return {
+                'type': 'base64',
+                'data': base64_data.decode(),
+                'format': format,
+            }
 
     def convert_url(self, path: str) -> str:
         ''' 将 path 转换为 url '''
@@ -63,11 +65,11 @@ class AlgoFunction:
         elif input_type == InputType.FLOAT:
             return float
         elif input_type == InputType.IMAGE_PATH:
-            return self.write_file
+            return self.convert_file_dict
         elif input_type == InputType.VIDEO_PATH:
-            return self.write_file
+            return self.convert_file_dict
         elif input_type == InputType.VOICE_PATH:
-            return self.write_file
+            return self.convert_file_dict
         else:
             return str
 
@@ -100,10 +102,7 @@ class AlgoFunction:
         if not can_call:
             raise Exception('This algorithm is not callable now because the provider closed the service.')
 
-        kwargs = {
-            '__algo_name__': info['name'],
-            '__algo_version__': info['version'],
-        }
+        kwargs = {}
         for index, arg in enumerate(args):
             if len(input_param) == index:
                 break
@@ -119,7 +118,7 @@ class AlgoFunction:
 
         try:
             response = requests.post(info['predict_url'],
-                                     data=kwargs,
+                                     json=kwargs,
                                      headers=login_instance.get_header(),
                                      timeout=self.timeout)
         except requests.exceptions.ReadTimeout:

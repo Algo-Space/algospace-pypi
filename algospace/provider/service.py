@@ -5,10 +5,10 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-02-03 17:11:42
+@LastEditTime: 2023-02-03 20:52:02
 '''
 
-from typing import Callable, Optional, List, Tuple
+from typing import Callable, Optional, List, Tuple, Union
 from algospace.logger import Logger, algospace_logger
 from algospace.util import create_timestamp_filename
 from . import config
@@ -95,26 +95,36 @@ class ApiService:
         self.algorithm_info = algorithm_info
         self.logger = Logger('Api Service', is_show_time=True)
 
-    def read_file(self, base64_or_path: str) -> str:
-        ''' 将 base64 编码或 storage 返回的 path 转换为本地文件并返回本地文件路径 '''
-        tmp_path = self.algorithm_config.service_tmp_path
-        file_name = create_timestamp_filename()
-        local_path = os.path.join(tmp_path, file_name)
-        dir_path = os.path.dirname(local_path)
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path)
+    def read_file(self, dict_or_path: Union[dict, str]) -> str:
+        ''' 将文件字典或 storage 返回的 path 转换为本地文件并返回本地文件路径 '''
+        if type(dict_or_path) == dict:
+            file_dict: dict = dict_or_path  # type: ignore
+            file_name = create_timestamp_filename() + '.' + \
+                file_dict.get('format', '') if file_dict.get('format') else create_timestamp_filename()
 
-        try:
-            # 解码 base64
-            file_bytes = base64.b64decode(base64_or_path, validate=True)
-        except binascii.Error:
-            # 将 storage 返回的 path 转换为本地 path
-            file_url = config.storage_file_url + '/' + base64_or_path
+            if file_dict.get('type', 'base64') == 'base64':
+                file_bytes = base64.b64decode(file_dict.get('data', ''), validate=True)
+            elif file_dict.get('type', 'base64') == 'url':
+                file_bytes = requests.get(file_dict.get('data', '')).content
+            else:
+                raise Exception(f'Invalid file type: {file_dict.get("type")}, only support base64 and url.')
+        else:
+            # 兼容旧版本: 传入的是 storage 返回的 path
+            path: str = dict_or_path  # type: ignore
+            file_name = path.split('/')[-1]
+            file_url = config.storage_file_url + '/' + path
             file_request = urllib.request.Request(url=file_url,  method='GET')
             headers = login_instance.get_header()
             for key, value in headers.items():
                 file_request.add_header(key, value)
-            file_bytes = urllib.request.urlopen(file_request).read()
+            file_response = urllib.request.urlopen(file_request)
+            file_bytes = file_response.read()
+
+        tmp_path = self.algorithm_config.service_tmp_path
+        local_path = os.path.join(tmp_path, file_name)
+        dir_path = os.path.dirname(local_path)
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
 
         with open(local_path, 'wb') as f:
             f.write(file_bytes)
