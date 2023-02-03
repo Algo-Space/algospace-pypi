@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-12-13 16:19:45
 @LastEditors: Kermit
-@LastEditTime: 2023-01-11 09:08:57
+@LastEditTime: 2023-02-03 17:05:13
 '''
 
 import traceback
@@ -19,16 +19,16 @@ from .config_loader import ConfigLoader
 from .config import Algoinfo, get_service_status_url, start_build_url, reset_status_url, get_build_ws_url, start_deploy_url, get_deploy_ws_url, upload_code_url
 from algospace.login import login_instance, login
 from algospace.provider.enroll import enroll
+from algospace.logger import algospace_logger
 
 
 def run_cloud_deploy(config_path: str, reset: bool = False):
     ''' 云端部署 '''
-    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Initializing...')
+    algospace_logger.info('Initializing...')
     algorithm_config = ConfigLoader(config_path)
     algorithm_info = Algoinfo(algorithm_config.name, algorithm_config.version)
     if not login(algorithm_config.username, algorithm_config.password):
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-              '[AlgoSpace] Login failed. Please check your password.')
+        algospace_logger.error('Login failed. Please check your password.')
         exit(1)
 
     try:
@@ -42,8 +42,7 @@ def run_cloud_deploy(config_path: str, reset: bool = False):
                algorithm_config.document,
                algorithm_config.config_file_content)
     except Exception as e:
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-              f'[AlgoSpace] Enroll failed:', str(e))
+        algospace_logger.error(f'Enroll failed: {str(e)}')
         exit(1)
 
     if reset and get_service_status(algorithm_config.name, algorithm_config.version) == 'built':
@@ -51,105 +50,89 @@ def run_cloud_deploy(config_path: str, reset: bool = False):
             reset_status_image(algorithm_config.name, algorithm_config.version)
         except Exception as e:
             traceback.print_exc()
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[AlgoSpace] Reset status error:', str(e))
+            algospace_logger.error(f'Reset status error: {str(e)}')
             exit(1)
 
     if get_service_status(algorithm_config.name, algorithm_config.version) == 'unready':
         try:
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Upload processing...')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[AlgoSpace] It may take a few minutes to upload your code.')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[AlgoSpace] It depends on the size of your code.')
+            algospace_logger.info('Upload processing...')
+            algospace_logger.info('It may take a few minutes to upload your code.')
+            algospace_logger.info('It depends on the size of your code.')
             upload_local_file_as_zip(algorithm_config.name, algorithm_config.version)
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Upload successfully!')
+            algospace_logger.info('Upload successfully!')
         except Exception as e:
             traceback.print_exc()
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Upload error:', str(e))
+            algospace_logger.error(f'Upload error: {str(e)}')
             exit(1)
 
         try:
             start_build_image(algorithm_config.name, algorithm_config.version, config_path)
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Start build...')
+            algospace_logger.info('Start build...')
         except Exception as e:
             traceback.print_exc()
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Start build error:', str(e))
+            algospace_logger.error(f'Start build error: {str(e)}')
             exit(1)
 
     if get_service_status(algorithm_config.name, algorithm_config.version) in ('built', 'building', 'pending', 'unready'):
         try:
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Build log:')
+            algospace_logger.info('Build log:')
             get_build_log(algorithm_config.name, algorithm_config.version)
         except Exception as e:
             traceback.print_exc()
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[AlgoSpace] Get build log error:', str(e))
+            algospace_logger.error(f'Get build log error: {str(e)}')
             exit(1)
 
         while get_service_status(algorithm_config.name, algorithm_config.version) in ('building', 'pending'):
             time.sleep(1)
         if get_service_status(algorithm_config.name, algorithm_config.version) == 'unready':
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Build failed.')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[AlgoSpace] Please check your code and config file according to the build log.')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] After modification,')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[AlgoSpace] please run `algospace cloud:deploy` again.')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  f'[AlgoSpace] Or go to {algorithm_info.algorithm_cloud_site} to replace part of files uploaded. (Avoid re-uploading the entire code)')
+            algospace_logger.error('Build failed.')
+            algospace_logger.error('Please check your code and config file according to the build log.')
+            algospace_logger.error('After modification, please run `algospace cloud:deploy` again.')
+            algospace_logger.error(
+                f'Or go to {algorithm_info.algorithm_cloud_site} to replace part of files uploaded. (Avoid re-uploading the entire code)')
             exit(1)
         if get_service_status(algorithm_config.name, algorithm_config.version) == 'built':
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Build successfully!')
+            algospace_logger.info('Build successfully!')
 
     if get_service_status(algorithm_config.name, algorithm_config.version) == 'built':
         try:
             start_deploy(algorithm_config.name, algorithm_config.version)
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Start deploy...')
+            algospace_logger.info('Start deploy...')
         except Exception as e:
             traceback.print_exc()
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[AlgoSpace] Start deploy error:', str(e))
+            algospace_logger.error(f'Start deploy error: {str(e)}')
             exit(1)
 
     if get_service_status(algorithm_config.name, algorithm_config.version) in ('deployed', 'deploying', 'waiting', 'built'):
         try:
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[AlgoSpace] It may take a few minutes to distribute the image to calculation node.')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[AlgoSpace] And then the deploy log will be shown below. Please wait patiently.')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Deploy log:')
+            algospace_logger.info('It may take a few minutes to distribute the image to calculation node.')
+            algospace_logger.info('And then the deploy log will be shown below. Please wait patiently.')
+            algospace_logger.info('Deploy log:')
             get_deploy_log(algorithm_config.name, algorithm_config.version)
         except Exception as e:
             traceback.print_exc()
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[AlgoSpace] Get deploy log error:', str(e))
+            algospace_logger.error(f'Get deploy log error: {str(e)}')
             exit(1)
 
         while get_service_status(algorithm_config.name, algorithm_config.version) in ('deploying', 'waiting'):
             time.sleep(1)
         if get_service_status(algorithm_config.name, algorithm_config.version) == 'built':
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Deploy failed.')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[AlgoSpace] Please check your code and config file according to the deploy log.')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] After modification,')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[AlgoSpace] please run `algospace cloud:deploy --reset` to deploy again.')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  f'[AlgoSpace] Or go to {algorithm_info.algorithm_cloud_site} to replace part of files uploaded. (Avoid re-uploading the entire code)')
+            algospace_logger.error('Deploy failed.')
+            algospace_logger.error('Please check your code and config file according to the deploy log.')
+            algospace_logger.error('After modification, please run `algospace cloud:deploy --reset` to deploy again.')
+            algospace_logger.error(
+                f'Or go to {algorithm_info.algorithm_cloud_site} to replace part of files uploaded. (Avoid re-uploading the entire code)')
             exit(1)
         if get_service_status(algorithm_config.name, algorithm_config.version) == 'deployed':
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Deploy successfully!')
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[AlgoSpace] You can run `algospace cloud:log` to view the running log.')
+            algospace_logger.info('Deploy successfully!')
+            algospace_logger.info('You can run `algospace cloud:log` to view the running log.')
 
 
 def show_running_log(config_path: str):
     ''' 显示运行日志 '''
     algorithm_config = ConfigLoader(config_path)
     if not login(algorithm_config.username, algorithm_config.password):
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-              '[AlgoSpace] Login failed. Please check your password.')
+        algospace_logger.error('Login failed. Please check your password.')
         exit(1)
 
     if get_service_status(algorithm_config.name, algorithm_config.version) == 'deployed':
@@ -157,11 +140,10 @@ def show_running_log(config_path: str):
             get_deploy_log(algorithm_config.name, algorithm_config.version, True)
         except Exception as e:
             traceback.print_exc()
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[AlgoSpace] Get running log error:', str(e))
+            algospace_logger.error(f'Get running log error: {str(e)}')
             exit(1)
     else:
-        print('[AlgoSpace] The service is not deployed. Please run `algospace cloud:deploy` first.')
+        algospace_logger.warning('The service is not deployed. Please run `algospace cloud:deploy` first.')
 
 
 def get_service_status(name: str, version: str):

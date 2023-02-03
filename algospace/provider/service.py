@@ -5,10 +5,12 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-02-02 22:52:42
+@LastEditTime: 2023-02-03 17:11:42
 '''
 
 from typing import Callable, Optional, List, Tuple
+from algospace.logger import Logger, algospace_logger
+from algospace.util import create_timestamp_filename
 from . import config
 from .config import Algoinfo
 import urllib.request
@@ -32,6 +34,8 @@ import json
 import time
 import os
 import re
+import base64
+import binascii
 
 
 class FnService:
@@ -39,6 +43,7 @@ class FnService:
 
     def __init__(self, algorithm_config: ConfigLoader) -> None:
         self.algorithm_config = algorithm_config
+        self.logger = Logger('Fn Service', is_show_time=True)
 
     async def handle(self, *args, **kwargs):
         ''' 处理函数请求 '''
@@ -51,11 +56,9 @@ class FnService:
         while True:
             try:
                 args, kwargs = fn_req_queue.get()
-                print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                      f'[Fn Service] [{fn_index}] Begin to calculate')
+                self.logger.info(f'[{fn_index}] Begin to calculate.')
                 out = asyncio.run(self.handle(*args, **kwargs))
-                print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                      f'[Fn Service] [{fn_index}] Complete.')
+                self.logger.info(f'[{fn_index}] Complete.')
                 fn_res_queue.put((out, None))
             except Exception as e:
                 fn_res_queue.put((None, e))
@@ -90,24 +93,31 @@ class ApiService:
     def __init__(self, algorithm_config: ConfigLoader, algorithm_info: Algoinfo) -> None:
         self.algorithm_config = algorithm_config
         self.algorithm_info = algorithm_info
+        self.logger = Logger('Api Service', is_show_time=True)
 
-    def read_file(self, path: str) -> str:
-        ''' 将 storage 返回的 path 转换为本地 path '''
-        file_url = config.storage_file_url + '/' + path
+    def read_file(self, base64_or_path: str) -> str:
+        ''' 将 base64 编码或 storage 返回的 path 转换为本地文件并返回本地文件路径 '''
         tmp_path = self.algorithm_config.service_tmp_path
-        dir_path = os.path.dirname(os.path.join(tmp_path, path))
+        file_name = create_timestamp_filename()
+        local_path = os.path.join(tmp_path, file_name)
+        dir_path = os.path.dirname(local_path)
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
 
-        file_request = urllib.request.Request(url=file_url,  method='GET')
-        headers = login_instance.get_header()
-        for key, value in headers.items():
-            file_request.add_header(key, value)
-        file_bytes = urllib.request.urlopen(file_request).read()
+        try:
+            # 解码 base64
+            file_bytes = base64.b64decode(base64_or_path, validate=True)
+        except binascii.Error:
+            # 将 storage 返回的 path 转换为本地 path
+            file_url = config.storage_file_url + '/' + base64_or_path
+            file_request = urllib.request.Request(url=file_url,  method='GET')
+            headers = login_instance.get_header()
+            for key, value in headers.items():
+                file_request.add_header(key, value)
+            file_bytes = urllib.request.urlopen(file_request).read()
 
-        with open(os.path.join(tmp_path, path), 'wb') as f:
+        with open(local_path, 'wb') as f:
             f.write(file_bytes)
-        local_path = os.path.join(tmp_path, path)
 
         return local_path
 
@@ -173,7 +183,7 @@ class ApiService:
                fn_req_queue_list: List[multiprocessing.Queue],
                fn_res_queue_list: List[multiprocessing.Queue]) -> dict:
         ''' 处理请求 '''
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Api Service] Begin to handle.')
+        self.logger.info('Begin to handle.')
         params = {}
         for key, info in self.algorithm_config.service_input.items():
             params[key] = self.get_input_type_class(info['type'])(input_info[key])
@@ -193,7 +203,7 @@ class ApiService:
         output_info = {}
         for key, info in self.algorithm_config.service_output.items():
             output_info[key] = self.get_output_type_class(info['type'])(out[key])
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Api Service] Complete.')
+        self.logger.info('Complete.')
         return output_info
 
     def get_example(self):
@@ -214,6 +224,8 @@ class GradioService:
         self.algorithm_config = algorithm_config
         self.algorithm_info = algorithm_info
         self.gradio_upload_url = None
+        self.logger = Logger('Gradio Service', is_show_time=True)
+        self.init_logger = Logger('Gradio Init', is_show_time=True)
 
     def get_input_component(self, input_type: str, describe: str):
         ''' 获取处理每种类型的 Gradio component '''
@@ -347,7 +359,7 @@ class GradioService:
 
     async def handle(self, input_info: dict) -> dict:
         ''' 处理请求 '''
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Gradio Service] Begin to handle.')
+        self.logger.info('Begin to handle.')
 
         req_method = input_info['method']
         req_apipath = input_info['apipath']
@@ -379,12 +391,12 @@ class GradioService:
         else:
             result = {}
 
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Gradio Service] Complete.')
+        self.logger.info('Complete.')
         return result
 
     async def handle_init(self) -> dict:
         ''' 处理 Gradio 初始化请求 '''
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Gradio Init] Begin to handle.')
+        self.init_logger.info('Begin to handle.')
 
         if not os.path.exists('./frontend'):
             gradio_path = '/'.join(gr.__file__.split('/')[:-1])
@@ -424,7 +436,7 @@ class GradioService:
 
         shutil.rmtree('./frontend')  # 删除已上传的文件夹
 
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Gradio Init] Complete.')
+        self.init_logger.info('Complete.')
         return {}
 
 
@@ -446,6 +458,9 @@ class Service:
         self.fn_service = FnService(self.algorithm_config)
         self.api_service = ApiService(self.algorithm_config, self.algorithm_info)
         self.gradio_service = GradioService(self.algorithm_config, self.algorithm_info)
+
+        self.logger = Logger('Service', is_show_time=True)
+        self.algo_logger = Logger(self.algorithm_info.upper_name, is_show_time=True)
 
     def launch(self,
                stdio_queue: multiprocessing.Queue,
@@ -476,8 +491,7 @@ class Service:
                 raise Exception('Argument "type" is unaccessable.')
         except Exception as e:
             traceback.print_exc()
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  f'[{self.algorithm_info.upper_name}] Launch {type} error:', str(e))
+            self.algo_logger.error(f'Launch {type} error: {str(e)}')
             exit(1)
 
     def launch_service(self,
@@ -491,9 +505,9 @@ class Service:
         self.algorithm_config.gradio_server_port = gradio_port
 
         # 开始处理
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}] [Service] Running in {self.fetch_mode} mode.')
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}] [Service] Your algorithm site: {self.algorithm_info.algorithm_site}')
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}] [Service] Start handling...')
+        self.logger.info(f'Running in {self.fetch_mode} mode.')
+        self.logger.info(f'Your algorithm site: {self.algorithm_info.algorithm_site}')
+        self.logger.info('Start handling...')
         print('')
 
         parallel = {
@@ -530,8 +544,7 @@ class Service:
                         req_info['type'] == 'gradio_init'))  # type: ignore
                 except Exception as e:
                     traceback.print_exc()
-                    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                          '[Service] Create handle task error:', str(e))
+                    self.logger.error(f'Create handle task error: {str(e)}')
 
                 while is_parallel_full():
                     # 并行数达到上限，等待
@@ -559,8 +572,7 @@ class Service:
                             continue
                     except Exception as e:
                         traceback.print_exc()
-                        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                              '[Service] Ask data error:', str(e))
+                        self.logger.error(f'Ask data error: {str(e)}')
                         await asyncio.sleep(config.wait_interval)
                         continue
 
@@ -574,8 +586,7 @@ class Service:
                         await asyncio.sleep(config.call_interval)
                     except Exception as e:
                         traceback.print_exc()
-                        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                              '[Service] Create handle task error:', str(e))
+                        self.logger.error(f'Create handle task error: {str(e)}')
                         await asyncio.sleep(config.wait_interval)
 
             asyncio.run(start())
@@ -613,8 +624,7 @@ class Service:
             await loop.run_in_executor(None, ws.run_forever)
         except Exception as e:
             traceback.print_exc()
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[Service] Websocket ask data error:', str(e))
+            self.logger.error(f'Websocket ask data error: {str(e)}')
 
     async def ask_data(self, id: Optional[str] = None) -> Optional[dict]:
         ask_for_data_resp = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.get(self.ask_data_url,
@@ -701,8 +711,7 @@ class Service:
                     err_msg = "Service Result Return Error."
                     raise Exception(err_msg)
                 else:
-                    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                          '[Service] Return ans success.')
+                    self.logger.info(f'Return ans success.')
             except Exception as e:
                 traceback.print_exc()
                 # 回传失败数据
@@ -724,16 +733,14 @@ class Service:
                 await asyncio.get_event_loop().run_in_executor(None, lambda: requests.post(self.return_err_url,
                                                                                            json=return_error_param,
                                                                                            headers=login_instance.get_header()))
-                print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                      '[Service] Return error ans success.')
+                self.logger.error(f'Return error ans success.')
         except Exception as e:
             traceback.print_exc()
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[Service] Handle error:', str(e))
+            self.logger.error(f'Handle error: {str(e)}')
 
     def login(self):
         if not login(self.algorithm_config.username, self.algorithm_config.password):
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  f'[{self.algorithm_info.upper_name}] Login failed. Please check your password.')
+            self.algo_logger.error(f'Login failed. Please check your password.')
             return False
         return True
 
@@ -750,8 +757,7 @@ class Service:
                    self.algorithm_config.config_file_content)
             return True
         except Exception as e:
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  f'[{self.algorithm_info.upper_name}] Enroll failed:', str(e))
+            self.algo_logger.error(f'Enroll failed: {str(e)}')
             return False
 
     def verify_config(self):
@@ -765,13 +771,12 @@ class Service:
                 filepath = os.path.join(dirpath, 'algospace-config-origin.py')
                 with open(filepath, 'w') as f:
                     f.write(file)
-                print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                      f'[{self.algorithm_info.upper_name}] Content of \'{self.algorithm_config.config_path}\' is not same as the config enrolled before. The original config file is regenerated at \'{filepath}\'. Please use the original file to start. Or if you have modified the algorithm, use a new \'version\' to start.')
+                self.algo_logger.error(
+                    f'Content of \'{self.algorithm_config.config_path}\' is not same as the config enrolled before. The original config file is regenerated at \'{filepath}\'. Please use the original file to start. Or if you have modified the algorithm, use a new \'version\' to start.')
                 return False
             return True
         except Exception as e:
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  f'[{self.algorithm_info.upper_name}] Verify config failed:', str(e))
+            self.algo_logger.error(f'Verify config failed: {str(e)}')
             return False
 
     def is_component_normal(self):
@@ -784,8 +789,7 @@ class Service:
                 self.return_err_url = res['return_err_url']
                 self.gradio_service.gradio_upload_url = res['gradio_upload_url']
                 break
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  f'[{self.algorithm_info.upper_name}] Waiting for components started...')
+            self.algo_logger.info(f'Waiting for components started...')
             time.sleep(5)
 
     def send_heartbeat(self):
@@ -797,8 +801,7 @@ class Service:
 
     async def start(self):
         # 初始化状态
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-              f'[{self.algorithm_info.upper_name}] Initializing...')
+        self.algo_logger.info(f'Initializing...')
         if not self.login():
             return
         if not self.enroll():
@@ -862,8 +865,7 @@ class Service:
         service_process = create_service_process()
         gradio_process = create_gradio_process()
 
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-              f'[{self.algorithm_info.upper_name}] Waiting for service launched...')
+        self.algo_logger.info(f'Waiting for service launched...')
 
         # 开启事件循环
         async def alive_task():
@@ -891,8 +893,7 @@ class Service:
                     times += 1
                 except Exception as e:
                     traceback.print_exc()
-                    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                          f'[{self.algorithm_info.upper_name}] Heartbeat error:', str(e))
+                    self.algo_logger.error(f'Heartbeat error: {str(e)}')
 
         async def subprocess_stdio_task():
             queue_stdio_exec = QueueStdIOExec(stdio_queue)
@@ -906,8 +907,7 @@ class Service:
                     is_execed = await asyncio.get_running_loop().run_in_executor(None, stdio_exec)
                 except Exception as e:
                     traceback.print_exc()
-                    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                          f'[{self.algorithm_info.upper_name}] Handle subprocess stdio error:', str(e))
+                    self.algo_logger.error(f'Handle subprocess stdio error: {str(e)}')
                 except asyncio.CancelledError:
                     stdio_exec_all()
                     raise
@@ -924,10 +924,10 @@ class Service:
 def run_service(config_path: str, fetch_mode: str = 'listen') -> None:
     loop = asyncio.get_event_loop()
     try:
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Init.')
+        algospace_logger.info('Init.')
         service = Service(config_path, fetch_mode)
         loop.run_until_complete(service.start())
     except:
         traceback.print_exc()
     finally:
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Exit.')
+        algospace_logger.info('Exit.')

@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-01-10 17:34:33
+@LastEditTime: 2023-02-03 16:56:35
 '''
 
 from .config import enroll_url, verify_config_url, is_component_normal_url
@@ -13,6 +13,7 @@ import requests
 import time
 import traceback
 from algospace.login import login, login_instance
+from algospace.logger import algospace_logger
 from .config_loader import ConfigLoader
 
 
@@ -20,19 +21,18 @@ def enroll_from_config(config_path: str):
     ''' 从配置文件注册 '''
     try:
         algorithm_config = ConfigLoader(config_path)
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Login...')
+        algospace_logger.info('Login...')
         if not login(algorithm_config.username, algorithm_config.password):
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[AlgoSpace] Login failed. Please check your password.')
-            return
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Enroll processing...')
+            algospace_logger.error('Login failed. Please check your password.')
+            exit(1)
+        algospace_logger.info('Enroll processing...')
         enroll(algorithm_config.name, algorithm_config.version, algorithm_config.service_input, algorithm_config.service_output,
                algorithm_config.description, algorithm_config.scope, algorithm_config.chinese_name, algorithm_config.document, algorithm_config.config_file_content)
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-              f'[AlgoSpace] Enroll successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}')
+        algospace_logger.info(
+            f'Enroll successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}')
     except Exception as e:
         traceback.print_exc()
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Enroll error:', str(e))
+        algospace_logger.error(f'Enroll error: {str(e)}')
         exit(1)
 
 
