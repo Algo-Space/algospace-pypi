@@ -12,15 +12,15 @@ from algospace import InputType, OutputType
 #   - service_function:     算法服务函数名
 #   - service_input:        函数输入参数，字典类型
 #       - .{arg}:           参数名
-#       - .{arg}.type:      参数类型，包含: STRING (字符串), INTEGER (定点数), FLOAT (浮点数), IMAGE_PATH (图片本地路径), VIDEO_PATH (视频本地路径), VOICE_PATH (音频本地路径)
+#       - .{arg}.type:      参数类型，包含: String (字符串), Integer (定点数), Float (浮点数), ImagePath (图片路径), VideoPath (视频路径), VoicePath (音频路径)
 #       - .{arg}.describe:  参数简要描述
 #   - service_output:       函数输出参数，字典类型，函数需以对应字典类型输出
 #       - .{arg}:           参数名
-#       - .{arg}.type:      参数类型，包含: STRING (字符串), INTEGER (定点数), FLOAT (浮点数), IMAGE_PATH (图片本地路径), VIDEO_PATH (视频本地路径), VOICE_PATH (音频本地路径)
+#       - .{arg}.type:      参数类型，包含: String (字符串), Integer (定点数), Float (浮点数), ImagePath (图片路径), VideoPath (视频路径), VoicePath (音频路径)
 #       - .{arg}.describe:  参数简要描述
 #   - service_timeout:      超时时间，单位: 秒
 #   - service_max_parallel: 最大同时处理请求数；若大于 1，则需要保证函数处理时的线程安全，否则请通过多实例部署算法
-#   - service_tmp_dir:      临时文件存放文件夹的路径，相对于本文件路径，用于函数输入参数包含 IMAGE_PATH, VIDEO_PATH, VOICE_PATH 时存放临时文件
+#   - service_tmp_dir:      临时文件存放文件夹的路径，相对于本文件路径，用于函数输入参数包含 ImagePath, VideoPath, VoicePath 时存放临时文件
 #
 # 参数配置填写示例:
 #   示例函数:
@@ -29,24 +29,12 @@ from algospace import InputType, OutputType
 #           return { 'result_text': ..., 'result_image': ... }
 #   对应参数配置:
 #       service_input = {
-#           'text': {
-#               'type': InputType.STRING,
-#               'describe': '输入一段文字',
-#           },
-#           'image': {
-#               'type': InputType.IMAGE_PATH,
-#               'describe': '输入一张图片',
-#           }
+#           'text': InputType.String(describe='输入一段文字'),
+#           'image': InputType.ImagePath(describe='输入一张图片')
 #       }
 #       service_output = {
-#           'result_text': {
-#               'type': InputType.STRING,
-#               'describe': '文字返回结果'
-#           },
-#           'result_image': {
-#               'type': InputType.IMAGE_PATH,
-#               'describe': '图片返回结果'
-#           }
+#           'result_text': OutputType.String(describe='文字返回结果'),
+#           'result_image': OutputType.ImagePath(describe='图片返回结果')
 #       }
 ############################
 
@@ -57,16 +45,10 @@ password = '****'
 service_filepath = './main.py'
 service_function = 'example_fn'
 service_input = {
-    'arg0': {
-        'type': InputType.STRING,
-        'describe': '',
-    }
+    'arg0': InputType.String(describe=''),
 }
 service_output = {
-    'arg0': {
-        'type': OutputType.STRING,
-        'describe': ''
-    }
+    'arg0': OutputType.String(describe=''),
 }
 service_timeout = 60
 service_max_parallel = 1

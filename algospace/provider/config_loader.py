@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 20:19:06
 @LastEditors: Kermit
-@LastEditTime: 2023-02-02 22:48:41
+@LastEditTime: 2023-02-03 14:07:46
 '''
 
 import os
@@ -22,6 +22,54 @@ class ParamType:
     IMAGE_PATH = 'image_path'
     VIDEO_PATH = 'video_path'
     VOICE_PATH = 'voice_path'
+
+    @classmethod
+    def String(cls, describe: str = '') -> dict:
+        ''' 字符串 '''
+        return {
+            'type': cls.STRING,
+            'describe': describe,
+        }
+
+    @classmethod
+    def Integer(cls, describe: str = '') -> dict:
+        ''' 定点数 '''
+        return {
+            'type': cls.INTEGER,
+            'describe': describe,
+        }
+
+    @classmethod
+    def Float(cls, describe: str = '') -> dict:
+        ''' 浮点数 '''
+        return {
+            'type': cls.FLOAT,
+            'describe': describe,
+        }
+
+    @classmethod
+    def ImagePath(cls, describe: str = '') -> dict:
+        ''' 图片路径 '''
+        return {
+            'type': cls.IMAGE_PATH,
+            'describe': describe,
+        }
+
+    @classmethod
+    def VideoPath(cls, describe: str = '') -> dict:
+        ''' 视频路径 '''
+        return {
+            'type': cls.VIDEO_PATH,
+            'describe': describe,
+        }
+
+    @classmethod
+    def VoicePath(cls, describe: str = '') -> dict:
+        ''' 音频路径 '''
+        return {
+            'type': cls.VOICE_PATH,
+            'describe': describe,
+        }
 
 
 class InputType(ParamType):
