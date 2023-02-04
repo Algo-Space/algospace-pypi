@@ -5,13 +5,13 @@
 @Author: Kermit
 @Date: 2022-11-05 20:19:06
 @LastEditors: Kermit
-@LastEditTime: 2023-02-03 14:07:46
+@LastEditTime: 2023-02-04 19:28:30
 '''
 
 import os
 import sys
 import re
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 from algospace.exceptions import ConfigError
 
 
@@ -23,6 +23,67 @@ class ParamType:
     VIDEO_PATH = 'video_path'
     VOICE_PATH = 'voice_path'
 
+
+class InputType(ParamType):
+    @classmethod
+    def String(cls, describe: str = '', max_length: Optional[int] = None) -> dict:
+        ''' 字符串 '''
+        return {
+            'type': cls.STRING,
+            'describe': describe,
+            **({'max_length': max_length} if max_length is not None else {}),
+        }
+
+    @classmethod
+    def Integer(cls, describe: str = '', min_value: Optional[int] = None, max_value: Optional[int] = None) -> dict:
+        ''' 定点数 '''
+        return {
+            'type': cls.INTEGER,
+            'describe': describe,
+            **({'min_value': min_value} if min_value is not None else {}),
+            **({'max_value': max_value} if max_value is not None else {}),
+        }
+
+    @classmethod
+    def Float(cls, describe: str = '', min_value: Optional[int] = None, max_value: Optional[int] = None, max_fraction: Optional[int] = None) -> dict:
+        ''' 浮点数 '''
+        return {
+            'type': cls.FLOAT,
+            'describe': describe,
+            **({'min_value': min_value} if min_value is not None else {}),
+            **({'max_value': max_value} if max_value is not None else {}),
+            **({'max_fraction': max_fraction} if max_fraction is not None else {}),
+        }
+
+    @classmethod
+    def ImagePath(cls, describe: str = '', max_size: Optional[Union[float, int]] = None) -> dict:
+        ''' 图片路径 '''
+        return {
+            'type': cls.IMAGE_PATH,
+            'describe': describe,
+            **({'max_size': max_size} if max_size is not None else {}),
+        }
+
+    @classmethod
+    def VideoPath(cls, describe: str = '', max_size: Optional[Union[float, int]] = None) -> dict:
+        ''' 视频路径 '''
+        return {
+            'type': cls.VIDEO_PATH,
+            'describe': describe,
+            **({'max_size': max_size} if max_size is not None else {}),
+        }
+
+    @classmethod
+    def VoicePath(cls, describe: str = '', max_size: Optional[Union[float, int]] = None) -> dict:
+        ''' 音频路径 '''
+        return {
+            'type': cls.VOICE_PATH,
+            'describe': describe,
+            **({'max_size': max_size} if max_size is not None else {}),
+        }
+
+
+class OutputType(ParamType):
     @classmethod
     def String(cls, describe: str = '') -> dict:
         ''' 字符串 '''
@@ -70,14 +131,6 @@ class ParamType:
             'type': cls.VOICE_PATH,
             'describe': describe,
         }
-
-
-class InputType(ParamType):
-    pass
-
-
-class OutputType(ParamType):
-    pass
 
 
 valid_input_type = [getattr(InputType, x) for x in dir(InputType) if not x.startswith('__')]
@@ -189,6 +242,30 @@ class ConfigLoader:
                 raise ConfigError(
                     f'ConfigError: type of \'{str(key)}\' in \'service_input\' is not in {str(valid_input_type)}.')
             info['describe'] = str(info.get('describe', ''))
+            if info.get('max_length', None) is not None and info['type'] != InputType.STRING:
+                raise ConfigError(f'ConfigError: max_length of \'{str(key)}\' in \'service_input\' is not allowed.')
+            if info.get('max_length', None) is not None and type(info['max_length']) != int:
+                raise ConfigError(f'ConfigError: max_length of \'{str(key)}\' in \'service_input\' is not int.')
+            if info.get('min_value', None) is not None and info['type'] not in [InputType.INTEGER, InputType.FLOAT]:
+                raise ConfigError(f'ConfigError: min_value of \'{str(key)}\' in \'service_input\' is not allowed.')
+            if info.get('min_value', None) is not None and type(info['min_value']) not in [int, float]:
+                raise ConfigError(f'ConfigError: min_value of \'{str(key)}\' in \'service_input\' is not int or float.')
+            if info.get('max_value', None) is not None and info['type'] not in [InputType.INTEGER, InputType.FLOAT]:
+                raise ConfigError(f'ConfigError: max_value of \'{str(key)}\' in \'service_input\' is not allowed.')
+            if info.get('max_value', None) is not None and type(info['max_value']) not in [int, float]:
+                raise ConfigError(f'ConfigError: max_value of \'{str(key)}\' in \'service_input\' is not int or float.')
+            if info.get('min_value', None) is not None and info.get('max_value', None) is not None and \
+                    info['min_value'] > info['max_value']:
+                raise ConfigError(
+                    f'ConfigError: min_value of \'{str(key)}\' in \'service_input\' is greater than max_value.')
+            if info.get('max_fraction', None) is not None and info['type'] != InputType.FLOAT:
+                raise ConfigError(f'ConfigError: max_fraction of \'{str(key)}\' in \'service_input\' is not allowed.')
+            if info.get('max_fraction', None) is not None and type(info['max_fraction']) != int:
+                raise ConfigError(f'ConfigError: max_fraction of \'{str(key)}\' in \'service_input\' is not int.')
+            if info.get('max_size', None) is not None and info['type'] not in [InputType.IMAGE_PATH, InputType.VIDEO_PATH, InputType.VOICE_PATH]:
+                raise ConfigError(f'ConfigError: max_size of \'{str(key)}\' in \'service_input\' is not allowed.')
+            if info.get('max_size', None) is not None and type(info['max_size']) not in [int, float]:
+                raise ConfigError(f'ConfigError: max_size of \'{str(key)}\' in \'service_input\' is not int or float.')
 
         if type(self.service_output) != dict:
             raise ConfigError('ConfigError: \'service_output\' is not dict.')
