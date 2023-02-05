@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-02-04 22:15:18
+@LastEditTime: 2023-02-05 22:25:04
 '''
 
 from .config import enroll_url, verify_config_url, is_component_normal_url
@@ -72,7 +72,16 @@ def verify_config(name: str, version: str, input: dict, output: dict):
     enroll_data = {
         'name': name,
         'version': version,
-        'input_param': [{'key': key, 'type': val['type'], 'describe': val['describe']} for key, val in input.items()],
+        'input_param': [{
+            'key': key,
+            'type': val['type'],
+            'describe': val['describe'],
+            **({'max_length': val.get('max_length')} if val.get('max_length') is not None else {}),
+            **({'max_value': val.get('max_value')} if val.get('max_value') is not None else {}),
+            **({'min_value': val.get('min_value')} if val.get('min_value') is not None else {}),
+            **({'max_fraction': val.get('max_fraction')} if val.get('max_fraction') is not None else {}),
+            **({'max_size': val.get('max_size')} if val.get('max_size') is not None else {}),
+        } for key, val in input.items()],
         'output_param': [{'key': key, 'type': val['type'], 'describe': val['describe']} for key, val in output.items()]
     }
     headers = login_instance.get_header()
