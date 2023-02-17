@@ -5,13 +5,14 @@
 @Author: Kermit
 @Date: 2022-11-11 13:21:18
 @LastEditors: Kermit
-@LastEditTime: 2023-01-23 22:36:16
+@LastEditTime: 2023-02-03 17:10:54
 '''
 
 import traceback
 import os
 from .config_loader import ConfigLoader
 from .config import Algoinfo
+from algospace.logger import algospace_logger_notime
 
 
 def generate_docker_config(config_path: str,
@@ -23,22 +24,23 @@ def generate_docker_config(config_path: str,
         algorithm_info = Algoinfo(algorithm_config.name, algorithm_config.version)
 
         gen_requirements_txt(algorithm_config.requirements)
-        print('[AlgoSpace] [Step 1/4] Requirements has been successfully generated!')
+        algospace_logger_notime.info('[Step 1/4] Requirements has been successfully generated!')
         gen_dockerfile(algorithm_config.pre_command,
                        algorithm_config.base_image,
                        config_path,
                        generate_debian_mirror,
                        use_buildkit_debian_cache,
                        use_buildkit_pip_cache)
-        print('[AlgoSpace] [Step 2/4] Dockerfile has been successfully generated!')
+        algospace_logger_notime.info('[Step 2/4] Dockerfile has been successfully generated!')
         gen_docker_compose(algorithm_info.image_name, algorithm_info.image_version, algorithm_info.lower_name)
-        print('[AlgoSpace] [Step 3/4] Docker compose file has been successfully generated!')
+        algospace_logger_notime.info('[Step 3/4] Docker compose file has been successfully generated!')
         gen_control_script(algorithm_info.image_name, algorithm_info.image_version)
-        print('[AlgoSpace] [Step 4/4] Docker control file has been successfully generated!')
-        print(f'[AlgoSpace] Generate successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}')
+        algospace_logger_notime.info('[Step 4/4] Docker control file has been successfully generated!')
+        algospace_logger_notime.info(
+            f'Generate successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}')
     except Exception as e:
         traceback.print_exc()
-        print('[AlgoSpace] Generate error:', str(e))
+        algospace_logger_notime.error('Generate error: ' + str(e))
         exit(1)
 
 

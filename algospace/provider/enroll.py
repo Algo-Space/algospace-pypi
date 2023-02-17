@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-01-10 17:34:33
+@LastEditTime: 2023-02-17 14:09:09
 '''
 
 from .config import enroll_url, verify_config_url, is_component_normal_url
@@ -13,6 +13,7 @@ import requests
 import time
 import traceback
 from algospace.login import login, login_instance
+from algospace.logger import algospace_logger
 from .config_loader import ConfigLoader
 
 
@@ -20,19 +21,18 @@ def enroll_from_config(config_path: str):
     ''' 从配置文件注册 '''
     try:
         algorithm_config = ConfigLoader(config_path)
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Login...')
-        if not login(algorithm_config.username, algorithm_config.password):
-            print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-                  '[AlgoSpace] Login failed. Please check your password.')
-            return
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Enroll processing...')
+        algospace_logger.info('Login...')
+        if not login(secret=algorithm_config.secret, username=algorithm_config.username, password=algorithm_config.password, privilege='PROVIDER'):
+            algospace_logger.error('Login failed. Please check your secret or password.')
+            exit(1)
+        algospace_logger.info('Enroll processing...')
         enroll(algorithm_config.name, algorithm_config.version, algorithm_config.service_input, algorithm_config.service_output,
                algorithm_config.description, algorithm_config.scope, algorithm_config.chinese_name, algorithm_config.document, algorithm_config.config_file_content)
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]',
-              f'[AlgoSpace] Enroll successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}')
+        algospace_logger.info(
+            f'Enroll successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}')
     except Exception as e:
         traceback.print_exc()
-        print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]', '[AlgoSpace] Enroll error:', str(e))
+        algospace_logger.error(f'Enroll error: {str(e)}')
         exit(1)
 
 
@@ -41,7 +41,16 @@ def enroll(name: str, version: str, input: dict, output: dict, description: str,
     enroll_data = {
         'name': name,
         'version': version,
-        'input_param': [{'key': key, 'type': val['type'], 'describe': val['describe']} for key, val in input.items()],
+        'input_param': [{
+            'key': key,
+            'type': val['type'],
+            'describe': val['describe'],
+            **({'max_length': val.get('max_length')} if val.get('max_length') is not None else {}),
+            **({'max_value': val.get('max_value')} if val.get('max_value') is not None else {}),
+            **({'min_value': val.get('min_value')} if val.get('min_value') is not None else {}),
+            **({'max_fraction': val.get('max_fraction')} if val.get('max_fraction') is not None else {}),
+            **({'max_size': val.get('max_size')} if val.get('max_size') is not None else {}),
+        } for key, val in input.items()],
         'output_param': [{'key': key, 'type': val['type'], 'describe': val['describe']} for key, val in output.items()],
         'description': description,
         'scope': scope,
@@ -63,7 +72,16 @@ def verify_config(name: str, version: str, input: dict, output: dict):
     enroll_data = {
         'name': name,
         'version': version,
-        'input_param': [{'key': key, 'type': val['type'], 'describe': val['describe']} for key, val in input.items()],
+        'input_param': [{
+            'key': key,
+            'type': val['type'],
+            'describe': val['describe'],
+            **({'max_length': val.get('max_length')} if val.get('max_length') is not None else {}),
+            **({'max_value': val.get('max_value')} if val.get('max_value') is not None else {}),
+            **({'min_value': val.get('min_value')} if val.get('min_value') is not None else {}),
+            **({'max_fraction': val.get('max_fraction')} if val.get('max_fraction') is not None else {}),
+            **({'max_size': val.get('max_size')} if val.get('max_size') is not None else {}),
+        } for key, val in input.items()],
         'output_param': [{'key': key, 'type': val['type'], 'describe': val['describe']} for key, val in output.items()]
     }
     headers = login_instance.get_header()

@@ -5,16 +5,136 @@
 @Author: Kermit
 @Date: 2022-11-05 20:19:06
 @LastEditors: Kermit
-@LastEditTime: 2023-01-23 22:36:07
+@LastEditTime: 2023-02-17 14:02:24
 '''
 
 import os
 import sys
 import re
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 from algospace.exceptions import ConfigError
 
-valid_param_type = ['str', 'int', 'float', 'image_path', 'video_path', 'voice_path']
+
+class ParamType:
+    STRING = 'str'
+    INTEGER = 'int'
+    FLOAT = 'float'
+    IMAGE_PATH = 'image_path'
+    VIDEO_PATH = 'video_path'
+    VOICE_PATH = 'voice_path'
+
+
+class InputType(ParamType):
+    @classmethod
+    def String(cls, describe: str = '', max_length: Optional[int] = None) -> dict:
+        ''' 字符串 '''
+        return {
+            'type': cls.STRING,
+            'describe': describe,
+            **({'max_length': max_length} if max_length is not None else {}),
+        }
+
+    @classmethod
+    def Integer(cls, describe: str = '', min_value: Optional[int] = None, max_value: Optional[int] = None) -> dict:
+        ''' 定点数 '''
+        return {
+            'type': cls.INTEGER,
+            'describe': describe,
+            **({'min_value': min_value} if min_value is not None else {}),
+            **({'max_value': max_value} if max_value is not None else {}),
+        }
+
+    @classmethod
+    def Float(cls, describe: str = '', min_value: Optional[int] = None, max_value: Optional[int] = None, max_fraction: Optional[int] = None) -> dict:
+        ''' 浮点数 '''
+        return {
+            'type': cls.FLOAT,
+            'describe': describe,
+            **({'min_value': min_value} if min_value is not None else {}),
+            **({'max_value': max_value} if max_value is not None else {}),
+            **({'max_fraction': max_fraction} if max_fraction is not None else {}),
+        }
+
+    @classmethod
+    def ImagePath(cls, describe: str = '', max_size: Optional[Union[float, int]] = None) -> dict:
+        ''' 图片路径 '''
+        return {
+            'type': cls.IMAGE_PATH,
+            'describe': describe,
+            **({'max_size': max_size} if max_size is not None else {}),
+        }
+
+    @classmethod
+    def VideoPath(cls, describe: str = '', max_size: Optional[Union[float, int]] = None) -> dict:
+        ''' 视频路径 '''
+        return {
+            'type': cls.VIDEO_PATH,
+            'describe': describe,
+            **({'max_size': max_size} if max_size is not None else {}),
+        }
+
+    @classmethod
+    def VoicePath(cls, describe: str = '', max_size: Optional[Union[float, int]] = None) -> dict:
+        ''' 音频路径 '''
+        return {
+            'type': cls.VOICE_PATH,
+            'describe': describe,
+            **({'max_size': max_size} if max_size is not None else {}),
+        }
+
+
+class OutputType(ParamType):
+    @classmethod
+    def String(cls, describe: str = '') -> dict:
+        ''' 字符串 '''
+        return {
+            'type': cls.STRING,
+            'describe': describe,
+        }
+
+    @classmethod
+    def Integer(cls, describe: str = '') -> dict:
+        ''' 定点数 '''
+        return {
+            'type': cls.INTEGER,
+            'describe': describe,
+        }
+
+    @classmethod
+    def Float(cls, describe: str = '') -> dict:
+        ''' 浮点数 '''
+        return {
+            'type': cls.FLOAT,
+            'describe': describe,
+        }
+
+    @classmethod
+    def ImagePath(cls, describe: str = '') -> dict:
+        ''' 图片路径 '''
+        return {
+            'type': cls.IMAGE_PATH,
+            'describe': describe,
+        }
+
+    @classmethod
+    def VideoPath(cls, describe: str = '') -> dict:
+        ''' 视频路径 '''
+        return {
+            'type': cls.VIDEO_PATH,
+            'describe': describe,
+        }
+
+    @classmethod
+    def VoicePath(cls, describe: str = '') -> dict:
+        ''' 音频路径 '''
+        return {
+            'type': cls.VOICE_PATH,
+            'describe': describe,
+        }
+
+
+valid_input_type = [getattr(InputType, x) for x in dir(InputType) if not x.startswith('__')]
+valid_output_type = [getattr(OutputType, x) for x in dir(OutputType) if not x.startswith('__')]
 
 
 class ConfigLoader:
@@ -35,6 +155,7 @@ class ConfigLoader:
 
         self.name: str = getattr(config, 'name', '')
         self.version: str = getattr(config, 'version', '')
+        self.secret: str = getattr(config, 'secret', '')
         self.username: str = getattr(config, 'username', '')
         self.password: str = getattr(config, 'password', '')
         self.service_filepath: str = getattr(config, 'service_filepath', '')
@@ -85,15 +206,14 @@ class ConfigLoader:
         if not bool(re.match('^[a-zA-Z0-9\.]+$', self.version)):
             raise ConfigError('ConfigError: \'version\' can only include \'a-z A-Z 0-9 .\'.')
 
+        if type(self.secret) != str:
+            raise ConfigError('ConfigError: \'secret\' is not str.')
         if type(self.username) != str:
             raise ConfigError('ConfigError: \'username\' is not str.')
-        if len(self.username) == 0:
-            raise ConfigError('ConfigError: \'username\' is empty.')
-
         if type(self.password) != str:
             raise ConfigError('ConfigError: \'password\' is not str.')
-        if len(self.password) == 0:
-            raise ConfigError('ConfigError: \'password\' is empty.')
+        if len(self.secret) == 0 and (len(self.password) == 0 or len(self.username) == 0):
+            raise ConfigError('ConfigError: \'secret\' or \'password\' is empty.')
 
         if type(self.service_filepath) != str:
             raise ConfigError('ConfigError: \'service_filepath\' is not str.')
@@ -118,10 +238,34 @@ class ConfigLoader:
                 raise ConfigError(f'ConfigError: key \'{str(key)}\' in \'service_input\' is not str.')
             if type(info) != dict:
                 raise ConfigError(f'ConfigError: value of \'{str(key)}\' in \'service_input\' is not dict.')
-            if info.get('type', '') not in valid_param_type:
+            if info.get('type', '') not in valid_input_type:
                 raise ConfigError(
-                    f'ConfigError: type of \'{str(key)}\' in \'service_input\' is not in {str(valid_param_type)}.')
+                    f'ConfigError: type of \'{str(key)}\' in \'service_input\' is not in {str(valid_input_type)}.')
             info['describe'] = str(info.get('describe', ''))
+            if info.get('max_length', None) is not None and info['type'] != InputType.STRING:
+                raise ConfigError(f'ConfigError: max_length of \'{str(key)}\' in \'service_input\' is not allowed.')
+            if info.get('max_length', None) is not None and type(info['max_length']) != int:
+                raise ConfigError(f'ConfigError: max_length of \'{str(key)}\' in \'service_input\' is not int.')
+            if info.get('min_value', None) is not None and info['type'] not in [InputType.INTEGER, InputType.FLOAT]:
+                raise ConfigError(f'ConfigError: min_value of \'{str(key)}\' in \'service_input\' is not allowed.')
+            if info.get('min_value', None) is not None and type(info['min_value']) not in [int, float]:
+                raise ConfigError(f'ConfigError: min_value of \'{str(key)}\' in \'service_input\' is not int or float.')
+            if info.get('max_value', None) is not None and info['type'] not in [InputType.INTEGER, InputType.FLOAT]:
+                raise ConfigError(f'ConfigError: max_value of \'{str(key)}\' in \'service_input\' is not allowed.')
+            if info.get('max_value', None) is not None and type(info['max_value']) not in [int, float]:
+                raise ConfigError(f'ConfigError: max_value of \'{str(key)}\' in \'service_input\' is not int or float.')
+            if info.get('min_value', None) is not None and info.get('max_value', None) is not None and \
+                    info['min_value'] > info['max_value']:
+                raise ConfigError(
+                    f'ConfigError: min_value of \'{str(key)}\' in \'service_input\' is greater than max_value.')
+            if info.get('max_fraction', None) is not None and info['type'] != InputType.FLOAT:
+                raise ConfigError(f'ConfigError: max_fraction of \'{str(key)}\' in \'service_input\' is not allowed.')
+            if info.get('max_fraction', None) is not None and type(info['max_fraction']) != int:
+                raise ConfigError(f'ConfigError: max_fraction of \'{str(key)}\' in \'service_input\' is not int.')
+            if info.get('max_size', None) is not None and info['type'] not in [InputType.IMAGE_PATH, InputType.VIDEO_PATH, InputType.VOICE_PATH]:
+                raise ConfigError(f'ConfigError: max_size of \'{str(key)}\' in \'service_input\' is not allowed.')
+            if info.get('max_size', None) is not None and type(info['max_size']) not in [int, float]:
+                raise ConfigError(f'ConfigError: max_size of \'{str(key)}\' in \'service_input\' is not int or float.')
 
         if type(self.service_output) != dict:
             raise ConfigError('ConfigError: \'service_output\' is not dict.')
@@ -132,9 +276,9 @@ class ConfigLoader:
                 raise ConfigError(f'ConfigError: key \'{str(key)}\' in \'service_output\' is not str.')
             if type(info) != dict:
                 raise ConfigError(f'ConfigError: value of \'{str(key)}\' in \'service_output\' is not dict.')
-            if info.get('type', '') not in valid_param_type:
+            if info.get('type', '') not in valid_output_type:
                 raise ConfigError(
-                    f'ConfigError: type of \'{str(key)}\' in \'service_output\' is not in {str(valid_param_type)}.')
+                    f'ConfigError: type of \'{str(key)}\' in \'service_output\' is not in {str(valid_output_type)}.')
             info['describe'] = str(info.get('describe', ''))
 
         if type(self.service_max_parallel) != int:

@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-11 15:27:48
 @LastEditors: Kermit
-@LastEditTime: 2022-11-11 22:04:55
+@LastEditTime: 2023-02-17 14:32:49
 '''
 
 
@@ -16,10 +16,10 @@ from .config import call_timeout
 from .fn import AlgoFunction
 
 
-def login(username: str, password: str) -> None:
+def login(secret: Optional[str] = None, username: Optional[str] = None, password: Optional[str] = None) -> None:
     ''' 登录 '''
-    if not ori_login(username, password):
-        raise LoginError('Login failed. Please check your password.')
+    if not ori_login(secret=secret, username=username, password=password):
+        raise LoginError('Login failed. Please check your secret or password.')
 
 
 _fn_storage = {}
