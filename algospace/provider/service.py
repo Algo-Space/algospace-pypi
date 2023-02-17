@@ -749,8 +749,8 @@ class Service:
             self.logger.error(f'Handle error: {str(e)}')
 
     def login(self):
-        if not login(self.algorithm_config.username, self.algorithm_config.password):
-            self.algo_logger.error(f'Login failed. Please check your password.')
+        if not login(secret=self.algorithm_config.secret, username=self.algorithm_config.username, password=self.algorithm_config.password, privilege='PROVIDER'):
+            self.algo_logger.error(f'Login failed. Please check your secret or password.')
             return False
         return True
 

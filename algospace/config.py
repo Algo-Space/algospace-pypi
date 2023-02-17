@@ -5,7 +5,8 @@
 @Author: Ecohnoch(xcy)
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-11-11 19:45:41
+@LastEditTime: 2023-02-17 12:33:56
 '''
 
 login_url = 'https://algospace.top/core/auth/login'
+login_by_secret_url = 'https://algospace.top/core/auth/login/secret'

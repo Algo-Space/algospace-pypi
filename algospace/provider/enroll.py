@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-02-05 22:25:04
+@LastEditTime: 2023-02-17 14:09:09
 '''
 
 from .config import enroll_url, verify_config_url, is_component_normal_url
@@ -22,8 +22,8 @@ def enroll_from_config(config_path: str):
     try:
         algorithm_config = ConfigLoader(config_path)
         algospace_logger.info('Login...')
-        if not login(algorithm_config.username, algorithm_config.password):
-            algospace_logger.error('Login failed. Please check your password.')
+        if not login(secret=algorithm_config.secret, username=algorithm_config.username, password=algorithm_config.password, privilege='PROVIDER'):
+            algospace_logger.error('Login failed. Please check your secret or password.')
             exit(1)
         algospace_logger.info('Enroll processing...')
         enroll(algorithm_config.name, algorithm_config.version, algorithm_config.service_input, algorithm_config.service_output,

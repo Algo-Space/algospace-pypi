@@ -6,8 +6,7 @@ from algospace import InputType, OutputType
 # 必填选项:
 #   - name:                 算法名，仅能包含英文字母、数字和 _ - @ 符号
 #   - version:              算法版本，仅能包含英文字母、数字和 . 符号
-#   - username:             登录名
-#   - password:             密码
+#   - secret:               发布者密钥，可在网页端获取
 #   - service_filepath:     算法服务函数所在文件路径，相对于本文件路径
 #   - service_function:     算法服务函数名
 #   - service_input:        函数输入参数，字典类型
@@ -40,8 +39,7 @@ from algospace import InputType, OutputType
 
 name = 'example_name'
 version = 'v1.0'
-username = 'user'
-password = '****'
+secret = '****'
 service_filepath = './main.py'
 service_function = 'example_fn'
 service_input = {

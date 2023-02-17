@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 20:19:06
 @LastEditors: Kermit
-@LastEditTime: 2023-02-04 19:28:30
+@LastEditTime: 2023-02-17 14:02:24
 '''
 
 import os
@@ -155,6 +155,7 @@ class ConfigLoader:
 
         self.name: str = getattr(config, 'name', '')
         self.version: str = getattr(config, 'version', '')
+        self.secret: str = getattr(config, 'secret', '')
         self.username: str = getattr(config, 'username', '')
         self.password: str = getattr(config, 'password', '')
         self.service_filepath: str = getattr(config, 'service_filepath', '')
@@ -205,15 +206,14 @@ class ConfigLoader:
         if not bool(re.match('^[a-zA-Z0-9\.]+$', self.version)):
             raise ConfigError('ConfigError: \'version\' can only include \'a-z A-Z 0-9 .\'.')
 
+        if type(self.secret) != str:
+            raise ConfigError('ConfigError: \'secret\' is not str.')
         if type(self.username) != str:
             raise ConfigError('ConfigError: \'username\' is not str.')
-        if len(self.username) == 0:
-            raise ConfigError('ConfigError: \'username\' is empty.')
-
         if type(self.password) != str:
             raise ConfigError('ConfigError: \'password\' is not str.')
-        if len(self.password) == 0:
-            raise ConfigError('ConfigError: \'password\' is empty.')
+        if len(self.secret) == 0 and (len(self.password) == 0 or len(self.username) == 0):
+            raise ConfigError('ConfigError: \'secret\' or \'password\' is empty.')
 
         if type(self.service_filepath) != str:
             raise ConfigError('ConfigError: \'service_filepath\' is not str.')

@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-12-13 16:19:45
 @LastEditors: Kermit
-@LastEditTime: 2023-02-03 17:05:13
+@LastEditTime: 2023-02-17 14:10:07
 '''
 
 import traceback
@@ -27,8 +27,8 @@ def run_cloud_deploy(config_path: str, reset: bool = False):
     algospace_logger.info('Initializing...')
     algorithm_config = ConfigLoader(config_path)
     algorithm_info = Algoinfo(algorithm_config.name, algorithm_config.version)
-    if not login(algorithm_config.username, algorithm_config.password):
-        algospace_logger.error('Login failed. Please check your password.')
+    if not login(secret=algorithm_config.secret, username=algorithm_config.username, password=algorithm_config.password, privilege='PROVIDER'):
+        algospace_logger.error('Login failed. Please check your secret or password.')
         exit(1)
 
     try:
@@ -131,8 +131,8 @@ def run_cloud_deploy(config_path: str, reset: bool = False):
 def show_running_log(config_path: str):
     ''' 显示运行日志 '''
     algorithm_config = ConfigLoader(config_path)
-    if not login(algorithm_config.username, algorithm_config.password):
-        algospace_logger.error('Login failed. Please check your password.')
+    if not login(secret=algorithm_config.secret, username=algorithm_config.username, password=algorithm_config.password, privilege='PROVIDER'):
+        algospace_logger.error('Login failed. Please check your secret or password.')
         exit(1)
 
     if get_service_status(algorithm_config.name, algorithm_config.version) == 'deployed':
