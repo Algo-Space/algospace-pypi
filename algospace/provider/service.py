@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-02-03 20:52:02
+@LastEditTime: 2023-02-21 17:15:11
 '''
 
 from typing import Callable, Optional, List, Tuple, Union
@@ -29,13 +29,11 @@ from algospace.login import login, login_instance
 from .config_loader import ConfigLoader, InputType, OutputType, valid_input_type, valid_output_type
 from .enroll import enroll, verify_config, is_component_normal
 from .stdio import GradioPrint, QueueStdIO, QueueStdIOExec
-import shutil
 import json
 import time
 import os
 import re
 import base64
-import binascii
 
 
 class FnService:
@@ -404,50 +402,8 @@ class GradioService:
         self.logger.info('Complete.')
         return result
 
-    async def handle_init(self) -> dict:
-        ''' 处理 Gradio 初始化请求 '''
-        self.init_logger.info('Begin to handle.')
-
-        if not os.path.exists('./frontend'):
-            gradio_path = '/'.join(gr.__file__.split('/')[:-1])
-            gradio_frontend_path = os.path.join(gradio_path, 'templates/frontend')
-            shutil.copytree(gradio_frontend_path, './frontend')
-            os.remove('./frontend/index.html')  # 删除未渲染的 index.html
-
-        async def upload_file(bashpath: str, subpath: str):
-            ''' 递归上传文件夹里的文件 '''
-            path = os.path.join(bashpath, subpath)
-            if os.path.exists(os.path.join(path, '.DS_Store')):
-                os.remove(os.path.join(path, '.DS_Store'))
-            for filename in os.listdir(path):
-                filepath = os.path.join(path, filename)
-                if os.path.isdir(filepath):
-                    await upload_file(bashpath, os.path.join(subpath, filename))
-                else:
-                    url = self.gradio_upload_url + '/' + subpath + '/' + filename  # type: ignore
-                    file = open(filepath, 'r', encoding="UTF-8", errors='ignore')
-                    res = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.post(url, files={'file': file}, headers=login_instance.get_header()))
-                    file.close()
-
-        await upload_file('./frontend', '.')  # 上传文件夹里的文件
-
-        if not os.path.exists('./frontend/index.html'):
-            html_res = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.get(
-                f'http://{self.algorithm_config.gradio_server_host}:{self.algorithm_config.gradio_server_port}'))
-            html_text = html_res.text
-            html_file = open('./frontend/index.html', 'w+', encoding="UTF-8", errors='ignore')
-            html_file.write(html_text)
-            html_file.close()
-        url = self.gradio_upload_url + '/index.html'  # type: ignore
-        file = open('./frontend/index.html', 'r', encoding="UTF-8", errors='ignore')
-        # 上传 index.html
-        res = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.post(url, files={'file': file}, headers=login_instance.get_header()))
-        file.close()
-
-        shutil.rmtree('./frontend')  # 删除已上传的文件夹
-
-        self.init_logger.info('Complete.')
-        return {}
+    def is_nouse_fn(self, input_info):
+        return type(input_info) == dict and input_info['method'] == 'GET'
 
 
 class Service:
@@ -547,11 +503,12 @@ class Service:
             def on_req(req_info: dict, loop: asyncio.AbstractEventLoop):
                 # 处理请求
                 try:
-                    add_parallel(req_info['type'] == 'gradio_init')
+                    if not self.is_exclude_parallel(req_info):
+                        add_parallel()
                     future = asyncio.run_coroutine_threadsafe(self.handle(req_info, fn_lock_list,
                                                                           fn_req_queue_list, fn_res_queue_list), loop)
-                    future.add_done_callback(lambda task: minus_parallel(
-                        req_info['type'] == 'gradio_init'))  # type: ignore
+                    if not self.is_exclude_parallel(req_info):
+                        future.add_done_callback(lambda task: minus_parallel())  # type: ignore
                 except Exception as e:
                     traceback.print_exc()
                     self.logger.error(f'Create handle task error: {str(e)}')
@@ -588,11 +545,12 @@ class Service:
 
                     # 处理请求
                     try:
-                        add_parallel(req_info['type'] == 'gradio_init')
+                        if not self.is_exclude_parallel(req_info):
+                            add_parallel()
                         future = loop.create_task(self.handle(req_info, fn_lock_list,
                                                               fn_req_queue_list, fn_res_queue_list))
-                        future.add_done_callback(lambda task: minus_parallel(
-                            req_info['type'] == 'gradio_init'))  # type: ignore
+                        if not self.is_exclude_parallel(req_info):
+                            future.add_done_callback(lambda task: minus_parallel())  # type: ignore
                         await asyncio.sleep(config.call_interval)
                     except Exception as e:
                         traceback.print_exc()
@@ -660,6 +618,30 @@ class Service:
             raise Exception('the property of \'req_info\' is not dict.')
         return req_info
 
+    def is_exclude_parallel(self, req_info: dict):
+        ''' 是否排除计算并行数外 '''
+        return req_info['type'] == 'gradio' and self.gradio_service.is_nouse_fn(req_info['data'])
+
+    async def get_full_req_info(self, req_info: dict):
+        ''' 获取完整的请求信息 '''
+        if type(req_info['data']) != dict:
+            req_id = req_info['id']
+            full_req_info = None
+            retry_times = 0
+            max_retry_times = 5
+            while not full_req_info:
+                if retry_times >= max_retry_times:
+                    raise Exception(f'Algo req \'{req_id}\' is not found.')
+                try:
+                    full_req_info = await self.ask_data(req_id)
+                except:
+                    pass
+                finally:
+                    retry_times += 1
+                    await asyncio.sleep(config.wait_interval * retry_times)
+            req_info = full_req_info
+        return req_info
+
     async def handle(self,
                      req_info: dict,
                      fn_lock_list: List[Lock],
@@ -667,22 +649,7 @@ class Service:
                      fn_res_queue_list: List[multiprocessing.Queue]):
         try:
             try:
-                if type(req_info['data']) != dict:
-                    req_id = req_info['id']
-                    full_req_info = None
-                    retry_times = 0
-                    max_retry_times = 5
-                    while not full_req_info:
-                        if retry_times >= max_retry_times:
-                            raise Exception(f'Algo req \'{req_id}\' is not found.')
-                        try:
-                            full_req_info = await self.ask_data(req_id)
-                        except:
-                            pass
-                        finally:
-                            retry_times += 1
-                            await asyncio.sleep(config.wait_interval * retry_times)
-                    req_info = full_req_info
+                req_info = await self.get_full_req_info(req_info)
 
                 # 根据请求类型处理
                 if req_info['type'] == 'api':
@@ -691,9 +658,6 @@ class Service:
                 elif req_info['type'] == 'gradio':
                     # 处理 Gradio 请求
                     result = await self.gradio_service.handle(req_info['data'])
-                elif req_info['type'] == 'gradio_init':
-                    # 处理 Gradio 初始化请求
-                    result = await self.gradio_service.handle_init()
                 else:
                     result = {}
 
