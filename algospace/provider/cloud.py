@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-12-13 16:19:45
 @LastEditors: Kermit
-@LastEditTime: 2023-02-17 14:10:07
+@LastEditTime: 2023-02-22 16:22:07
 '''
 
 import traceback
@@ -14,6 +14,7 @@ from zipfile import ZipFile
 import os
 import time
 import requests
+from requests_toolbelt import MultipartEncoder
 import json
 from .config_loader import ConfigLoader
 from .config import Algoinfo, get_service_status_url, start_build_url, reset_status_url, get_build_ws_url, start_deploy_url, get_deploy_ws_url, upload_code_url
@@ -173,13 +174,12 @@ def upload_local_file_as_zip(name: str, version: str):
                     relative_path = file_path.replace(root_path, '')
                     zip_file.write(file_path, relative_path)
 
-        algorithm_info = Algoinfo(name, version)
-
         with open(zip_name, 'rb') as f:
-            files = {'file': (zip_name, f.read())}
-        response = requests.post(f'{upload_code_url}/{name}/{version}',
-                                 files=files,
-                                 headers=login_instance.get_header())
+            data = {'file': (zip_name, f)}
+            m = MultipartEncoder(fields=data)
+            response = requests.post(f'{upload_code_url}/{name}/{version}',
+                                     data=m,
+                                     headers={'Content-Type': m.content_type, **login_instance.get_header()})
         if response.status_code != 200 and response.status_code != 201:
             raise Exception(response.status_code, response.content.decode())
         if response.json()['status'] != 200:
