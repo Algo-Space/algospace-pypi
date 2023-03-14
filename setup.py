@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2023-01-23 22:35:57
+@LastEditTime: 2023-02-22 16:17:40
 '''
 
 from setuptools import setup, find_packages
@@ -38,6 +38,7 @@ setup(
     install_requires=[
         'setuptools>=3.0',
         'requests',
+        'requests-toolbelt>=0.9.1',
         'websocket-client',
         'gradio>=3.0'
     ],

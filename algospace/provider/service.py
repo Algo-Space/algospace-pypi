@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-02-21 17:15:11
+@LastEditTime: 2023-03-14 14:40:11
 '''
 
 from typing import Callable, Optional, List, Tuple, Union
@@ -31,6 +31,7 @@ from .enroll import enroll, verify_config, is_component_normal
 from .stdio import GradioPrint, QueueStdIO, QueueStdIOExec
 import json
 import time
+import datetime
 import os
 import re
 import base64
@@ -648,10 +649,12 @@ class Service:
                      fn_req_queue_list: List[multiprocessing.Queue],
                      fn_res_queue_list: List[multiprocessing.Queue]):
         try:
+            start_time = datetime.datetime.now()
             try:
                 req_info = await self.get_full_req_info(req_info)
 
                 # 根据请求类型处理
+                start_time = datetime.datetime.now()
                 if req_info['type'] == 'api':
                     # 处理计算请求
                     result = await asyncio.get_event_loop().run_in_executor(None, lambda: self.api_service.handle(req_info['data'], fn_lock_list, fn_req_queue_list, fn_res_queue_list))
@@ -660,20 +663,16 @@ class Service:
                     result = await self.gradio_service.handle(req_info['data'])
                 else:
                     result = {}
+                end_time = datetime.datetime.now()
+                calculate_time = (end_time - start_time).total_seconds()
 
                 # 回传数据
-                res_info = {
-                    'id': req_info['id'],
-                    'name': req_info['name'],
-                    'version': req_info['version'],
-                    'type': req_info['type'],
-                    'status': 'success',
-                    'owner': req_info['owner'],
-                    'create_date': req_info['create_date'],
-                    'result': result
-                }
                 return_ans_param = {
-                    'res_info': res_info,
+                    'res_info': {
+                        'id': req_info['id'],
+                        'calculate_time': calculate_time,
+                        'result': result
+                    },
                     'algorithm_name': req_info['name'],
                     'algorithm_version': req_info['version']
                 }
@@ -688,19 +687,15 @@ class Service:
                     self.logger.info(f'Return ans success.')
             except Exception as e:
                 traceback.print_exc()
+                end_time = datetime.datetime.now()
+                calculate_time = (end_time - start_time).total_seconds()
                 # 回传失败数据
-                res_info = {
-                    'id': req_info['id'],
-                    'name': req_info['name'],
-                    'version': req_info['version'],
-                    'type': req_info['type'],
-                    'status': 'error',
-                    'owner': req_info['owner'],
-                    'create_date': req_info['create_date'],
-                    'result': {'err_msg': str(e)}
-                }
                 return_error_param = {
-                    'res_info': res_info,
+                    'res_info': {
+                        'id': req_info['id'],
+                        'calculate_time': calculate_time,
+                        'result': {'err_msg': str(e)}
+                    },
                     'algorithm_name': req_info['name'],
                     'algorithm_version': req_info['version']
                 }
