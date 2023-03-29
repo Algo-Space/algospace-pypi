@@ -5,10 +5,10 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-03-14 14:40:11
+@LastEditTime: 2023-03-29 17:44:22
 '''
 
-from typing import Callable, Optional, List, Tuple, Union
+from typing import Any, Callable, Optional, List, Tuple, Union
 from algospace.logger import Logger, algospace_logger
 from algospace.util import create_timestamp_filename
 from . import config
@@ -120,7 +120,7 @@ class ApiService:
             file_bytes = file_response.read()
 
         tmp_path = self.algorithm_config.service_tmp_path
-        local_path = os.path.join(tmp_path, file_name)
+        local_path = os.path.join(tmp_path, 'api', file_name)
         dir_path = os.path.dirname(local_path)
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
@@ -236,24 +236,24 @@ class GradioService:
         self.logger = Logger('Gradio Service', is_show_time=True)
         self.init_logger = Logger('Gradio Init', is_show_time=True)
 
-    def get_input_component(self, input_type: str, describe: str):
+    def get_input_component(self, input_type: str, describe: str, default: Any):
         ''' 获取处理每种类型的 Gradio component '''
         if input_type not in valid_input_type:
             raise Exception(f'Input type \'{input_type}\' is not available.')
         elif input_type == InputType.STRING:
-            return gr.Textbox(placeholder=describe, label=describe)
+            return gr.Textbox(placeholder=describe, label=describe, value=default)
         elif input_type == InputType.INTEGER:
-            return gr.Number(precision=0, label=describe)
+            return gr.Number(precision=0, label=describe, value=default)
         elif input_type == InputType.FLOAT:
-            return gr.Number(label=describe)
+            return gr.Number(label=describe, value=default)
         elif input_type == InputType.IMAGE_PATH:
-            return gr.Image(type='filepath', label=describe)
+            return gr.Image(type='filepath', label=describe, value=default)
         elif input_type == InputType.VIDEO_PATH:
-            return gr.Video(type='filepath', label=describe)
+            return gr.Video(type='filepath', label=describe, value=default)
         elif input_type == InputType.VOICE_PATH:
-            return gr.Audio(type='filepath', label=describe)
+            return gr.Audio(type='filepath', label=describe, value=default)
         else:
-            return gr.Textbox(placeholder=describe)
+            return gr.Textbox(placeholder=describe, value=default)
 
     def get_output_component(self, output_type: str, describe: str):
         ''' 获取处理每种类型的 Gradio component '''
@@ -304,17 +304,26 @@ class GradioService:
 
         inputs = []
         for _, info in self.algorithm_config.service_input.items():
-            inputs.append(self.get_input_component(info['type'], info['describe']))
+            inputs.append(self.get_input_component(info['type'], info['describe'], info.get('default', None)))
         outputs = []
         for _, info in self.algorithm_config.service_output.items():
             outputs.append(self.get_output_component(info['type'], info['describe']))
+        examples = []
+        for input_example in self.algorithm_config.service_input_examples:
+            example = []
+            for key, _ in self.algorithm_config.service_input.items():
+                example.append(input_example[key])
+            examples.append(example)
 
         gr_interface = gr.Interface(
             title=self.algorithm_info.full_name,
-            # description=self.algorithm_config.description,
             fn=fn,
             inputs=inputs,
             outputs=outputs,
+            **({
+                'examples': examples,
+                'cache_examples': True
+            } if len(examples) > 0 else {})
         )
 
         self.check_port()
@@ -325,12 +334,13 @@ class GradioService:
                 show_api=False,
                 show_tips=False,
                 favicon_path=None,
+                show_error=True,
                 inline=True,
                 quiet=True,
                 height=500,
                 width=900,
                 server_name=self.algorithm_config.gradio_server_host,
-                server_port=self.algorithm_config.gradio_server_port
+                server_port=self.algorithm_config.gradio_server_port,
             )
 
     def check_port(self):
