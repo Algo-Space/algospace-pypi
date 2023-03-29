@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-03-14 14:40:11
+@LastEditTime: 2023-03-29 16:17:28
 '''
 
 from typing import Callable, Optional, List, Tuple, Union
@@ -120,7 +120,7 @@ class ApiService:
             file_bytes = file_response.read()
 
         tmp_path = self.algorithm_config.service_tmp_path
-        local_path = os.path.join(tmp_path, file_name)
+        local_path = os.path.join(tmp_path, 'api', file_name)
         dir_path = os.path.dirname(local_path)
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
@@ -311,10 +311,10 @@ class GradioService:
 
         gr_interface = gr.Interface(
             title=self.algorithm_info.full_name,
-            # description=self.algorithm_config.description,
             fn=fn,
             inputs=inputs,
             outputs=outputs,
+            cache_examples=True,
         )
 
         self.check_port()
@@ -325,12 +325,13 @@ class GradioService:
                 show_api=False,
                 show_tips=False,
                 favicon_path=None,
+                show_error=True,
                 inline=True,
                 quiet=True,
                 height=500,
                 width=900,
                 server_name=self.algorithm_config.gradio_server_host,
-                server_port=self.algorithm_config.gradio_server_port
+                server_port=self.algorithm_config.gradio_server_port,
             )
 
     def check_port(self):
