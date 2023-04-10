@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-03-29 17:44:22
+@LastEditTime: 2023-04-04 14:54:51
 '''
 
 from typing import Any, Callable, Optional, List, Tuple, Union
@@ -871,6 +871,7 @@ class Service:
                         times = 0
                     times += 1
                 except Exception as e:
+                    times = 1
                     traceback.print_exc()
                     self.algo_logger.error(f'Heartbeat error: {str(e)}')
 

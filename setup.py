@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2023-02-22 16:17:40
+@LastEditTime: 2023-03-30 05:11:30
 '''
 
 from setuptools import setup, find_packages
@@ -19,7 +19,7 @@ setup(
     name=name,
     version=version,
     description=(
-        'AlgoSpace: A platform for displaying algorithm achievements'
+        'AlgoSpace: A platform for displaying and using algorithm achievements'
     ),
     long_description=open('README.md', encoding='utf8').read(),
     long_description_content_type='text/markdown',

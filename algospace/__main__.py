@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-01-10 16:36:26
+@LastEditTime: 2023-03-30 05:13:12
 '''
 
 from argparse import ArgumentParser
@@ -24,7 +24,7 @@ class ArgNamespace:
 
 
 def run():
-    parser = ArgumentParser('algospace', description='AlgoSpace 远程算法调用平台')
+    parser = ArgumentParser('algospace', description='AlgoSpace 打造我的算法模型集')
     subparsers = parser.add_subparsers(dest=ArgNamespace.command)  # ArgNamespace.command
 
     init_parser = subparsers.add_parser('init', description='初始化算法服务配置', help='初始化算法服务配置')
