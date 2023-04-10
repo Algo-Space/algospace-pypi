@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-07 14:56:36
 @LastEditors: Kermit
-@LastEditTime: 2023-01-06 16:30:43
+@LastEditTime: 2023-04-10 16:37:02
 '''
 
 import sys
@@ -91,7 +91,7 @@ class QueueStdIO:
                 self.queue.put((self.io_name, name, args, kwargs))
             return call
         else:
-            return self.io
+            return self.io.__getattribute__(name)
 
 
 class QueueStdIOExec:
