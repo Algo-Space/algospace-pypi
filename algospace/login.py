@@ -5,7 +5,7 @@
 @Author: Ecohnoch(xcy)
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2023-02-17 13:57:13
+@LastEditTime: 2023-05-10 16:43:49
 '''
 
 import time
@@ -32,6 +32,7 @@ class LoginInstance(metaclass=Singleton):
         self.secret = ''
         self.username = ''
         self.password = ''
+        self.privilege = 'CUSTOMER'
 
     def ever_logined(self) -> bool:
         return self.secret != '' or (self.username != '' and self.password != '')
@@ -58,10 +59,11 @@ class LoginInstance(metaclass=Singleton):
               secret: Optional[str] = '',
               username: Optional[str] = '',
               password: Optional[str] = '',
-              privilege: Optional[str] = 'CUSTOMER') -> bool:
+              privilege: Optional[str] = '') -> bool:
         self.secret = secret or self.secret
         self.username = username or self.username
         self.password = password or self.password
+        self.privilege = privilege or self.privilege
         try:
             login_url = config.login_by_secret_url if self.secret != '' else config.login_url
             login_data = {
@@ -76,8 +78,8 @@ class LoginInstance(metaclass=Singleton):
             if response.json()['status'] != 200:
                 raise Exception(response.json().get('err_msg', 'Login error.'))
             if self.secret != '':
-                if response.json()['data']['privilege'] != 'ADMINISTER' and response.json()['data']['privilege'] != privilege:
-                    raise LoginError(f'LoginError: Secret privilege is not {privilege}.')
+                if response.json()['data']['privilege'] != 'ADMINISTER' and response.json()['data']['privilege'] != self.privilege:
+                    raise LoginError(f'LoginError: Secret privilege is not {self.privilege}.')
                 self.username = response.json()['data']['user_id']
                 self.password = ''
             self.set_cookie(response.headers['Set-Cookie'], int(time.time()))
