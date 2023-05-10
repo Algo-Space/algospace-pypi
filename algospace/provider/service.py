@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-04-04 14:54:51
+@LastEditTime: 2023-04-14 12:52:52
 '''
 
 from typing import Any, Callable, Optional, List, Tuple, Union
@@ -885,12 +885,15 @@ class Service:
                     if not is_execed:
                         await asyncio.sleep(0.1)
                     is_execed = await asyncio.get_running_loop().run_in_executor(None, stdio_exec)
-                except Exception as e:
-                    traceback.print_exc()
-                    self.algo_logger.error(f'Handle subprocess stdio error: {str(e)}')
+                except concurrent.futures._base.CancelledError:
+                    stdio_exec_all()
+                    raise
                 except asyncio.CancelledError:
                     stdio_exec_all()
                     raise
+                except Exception as e:
+                    traceback.print_exc()
+                    self.algo_logger.error(f'Handle subprocess stdio error: {str(e)}')
 
         # 当有任务抛出异常时，停止所有任务
         tasks = [alive_task(), heartbeat_task(), subprocess_stdio_task()]
