@@ -11,5 +11,6 @@ test_parser.py
 __pycache__
 
 /kermit_test
+/gradio_cached_examples
 /frontend
 /flagged

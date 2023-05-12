@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-05-12 16:45:08
+@LastEditTime: 2023-05-12 17:10:35
 '''
 
 from typing import Any, Callable, Optional, List, Tuple, Union
@@ -860,6 +860,10 @@ class Service:
                         await asyncio.get_event_loop().run_in_executor(None, self.send_heartbeat)
                         times = 0
                     times += 1
+                except concurrent.futures._base.CancelledError:
+                    break
+                except asyncio.CancelledError:
+                    break
                 except Exception as e:
                     times = 1
                     traceback.print_exc()
@@ -877,10 +881,10 @@ class Service:
                     is_execed = await asyncio.get_event_loop().run_in_executor(None, stdio_exec)
                 except concurrent.futures._base.CancelledError:
                     stdio_exec_all()
-                    raise
+                    break
                 except asyncio.CancelledError:
                     stdio_exec_all()
-                    raise
+                    break
                 except Exception as e:
                     traceback.print_exc()
                     self.algo_logger.error(f'Handle subprocess stdio error: {str(e)}')
