@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-04-14 12:52:52
+@LastEditTime: 2023-05-12 16:45:08
 '''
 
 from typing import Any, Callable, Optional, List, Tuple, Union
@@ -834,31 +834,21 @@ class Service:
             gradio_process.start()
             return gradio_process
 
-        def check_process_alive(process: multiprocessing.Process):
-            is_alive = process.is_alive()
-            if not is_alive:
-                process.kill()
-            return is_alive
-
         fn_process = create_fn_process()
         service_process = create_service_process()
         gradio_process = create_gradio_process()
+        process_exit_code = None
 
         self.algo_logger.info(f'Waiting for service launched...')
 
-        # 开启事件循环
-        async def alive_task():
-            nonlocal fn_process
-            nonlocal service_process
-            nonlocal gradio_process
-            while True:
-                await asyncio.sleep(1)
-                if not check_process_alive(fn_process):
-                    raise Exception('Fn process is not alive. Please check error log above.')
-                if not check_process_alive(service_process):
-                    raise Exception('Service process is not alive')
-                if not check_process_alive(gradio_process):
-                    raise Exception('Gradio process is not alive')
+        async def join_task(process: multiprocessing.Process):
+            nonlocal process_exit_code
+            try:
+                await asyncio.get_event_loop().run_in_executor(None, process.join)
+                process_exit_code = process.exitcode
+            except:
+                if process.is_alive():
+                    process.kill()
 
         async def heartbeat_task():
             times = 0
@@ -867,7 +857,7 @@ class Service:
                     await asyncio.sleep(1)
                     if times % 10 == 0:
                         # 每 10 秒发送心跳
-                        await asyncio.get_running_loop().run_in_executor(None, self.send_heartbeat)
+                        await asyncio.get_event_loop().run_in_executor(None, self.send_heartbeat)
                         times = 0
                     times += 1
                 except Exception as e:
@@ -884,7 +874,7 @@ class Service:
                 try:
                     if not is_execed:
                         await asyncio.sleep(0.1)
-                    is_execed = await asyncio.get_running_loop().run_in_executor(None, stdio_exec)
+                    is_execed = await asyncio.get_event_loop().run_in_executor(None, stdio_exec)
                 except concurrent.futures._base.CancelledError:
                     stdio_exec_all()
                     raise
@@ -896,21 +886,31 @@ class Service:
                     self.algo_logger.error(f'Handle subprocess stdio error: {str(e)}')
 
         # 当有任务抛出异常时，停止所有任务
-        tasks = [alive_task(), heartbeat_task(), subprocess_stdio_task()]
-        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
+        tasks = [join_task(fn_process),
+                 join_task(service_process),
+                 join_task(gradio_process),
+                 heartbeat_task(),
+                 subprocess_stdio_task()]
+        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in pending:
             task.cancel()
         for task in done:
             task.result()
+        return process_exit_code
 
 
 def run_service(config_path: str, fetch_mode: str = 'listen') -> None:
     loop = asyncio.get_event_loop()
+    service_coroutine = None
+    exit_code = None
     try:
         algospace_logger.info('Init.')
         service = Service(config_path, fetch_mode)
-        loop.run_until_complete(service.start())
+        service_coroutine = service.start()
+        exit_code = loop.run_until_complete(service_coroutine)
     except:
         traceback.print_exc()
+        exit_code = 1
     finally:
         algospace_logger.info('Exit.')
+    exit(exit_code or 0)
