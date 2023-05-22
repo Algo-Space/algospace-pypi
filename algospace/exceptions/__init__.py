@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2022-11-11 18:50:46
+@LastEditTime: 2023-05-22 17:17:56
 '''
 
 class ConfigError(Exception):
@@ -33,5 +33,10 @@ class LoginError(Exception):
 
 
 class InvalidAlgorithmVersion(Exception):
+    def __init__(self, err_msg):
+        Exception.__init__(self, err_msg)
+
+
+class InvalidCallParamException(Exception):
     def __init__(self, err_msg):
         Exception.__init__(self, err_msg)

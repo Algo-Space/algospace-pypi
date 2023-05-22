@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-05-12 17:10:35
+@LastEditTime: 2023-05-22 17:20:46
 '''
 
 from typing import Any, Callable, Optional, List, Tuple, Union
@@ -27,8 +27,10 @@ import requests
 import websocket
 from algospace.login import login, login_instance
 from .config_loader import ConfigLoader, InputType, OutputType, valid_input_type, valid_output_type
+from .param_validator import ParamValidator
 from .enroll import enroll, verify_config, is_component_normal
 from .stdio import GradioPrint, QueueStdIO, QueueStdIOExec
+from algospace.exceptions import InvalidCallParamException
 import json
 import time
 import datetime
@@ -42,6 +44,7 @@ class FnService:
 
     def __init__(self, algorithm_config: ConfigLoader) -> None:
         self.algorithm_config = algorithm_config
+        self.param_validator = ParamValidator(algorithm_config)
         self.logger = Logger('Fn Service', is_show_time=True)
 
     async def handle(self, *args, **kwargs):
@@ -56,6 +59,9 @@ class FnService:
             try:
                 args, kwargs = fn_req_queue.get()
                 self.logger.info(f'[{fn_index}] Begin to calculate.')
+                param_result, param_err_msg = self.param_validator.validate(*args, **kwargs)
+                if not param_result:
+                    raise InvalidCallParamException(param_err_msg)
                 out = asyncio.run(self.handle(*args, **kwargs))
                 self.logger.info(f'[{fn_index}] Complete.')
                 fn_res_queue.put((out, None))
