@@ -4,8 +4,6 @@
 @Description: 算法提供者核心服务
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
-@LastEditors: Kermit
-@LastEditTime: 2023-05-12 17:10:35
 '''
 
 from typing import Any, Callable, Optional, List, Tuple, Union
@@ -27,8 +25,10 @@ import requests
 import websocket
 from algospace.login import login, login_instance
 from .config_loader import ConfigLoader, InputType, OutputType, valid_input_type, valid_output_type
+from .param_validator import ParamValidator
 from .enroll import enroll, verify_config, is_component_normal
 from .stdio import GradioPrint, QueueStdIO, QueueStdIOExec
+from algospace.exceptions import InvalidCallParamException
 import json
 import time
 import datetime
@@ -42,6 +42,7 @@ class FnService:
 
     def __init__(self, algorithm_config: ConfigLoader) -> None:
         self.algorithm_config = algorithm_config
+        self.param_validator = ParamValidator(algorithm_config)
         self.logger = Logger('Fn Service', is_show_time=True)
 
     async def handle(self, *args, **kwargs):
@@ -56,6 +57,9 @@ class FnService:
             try:
                 args, kwargs = fn_req_queue.get()
                 self.logger.info(f'[{fn_index}] Begin to calculate.')
+                param_result, param_err_msg = self.param_validator.validate(*args, **kwargs)
+                if not param_result:
+                    raise InvalidCallParamException(param_err_msg)
                 out = asyncio.run(self.handle(*args, **kwargs))
                 self.logger.info(f'[{fn_index}] Complete.')
                 fn_res_queue.put((out, None))
@@ -841,6 +845,8 @@ class Service:
 
         self.algo_logger.info(f'Waiting for service launched...')
 
+        after_cancel_tasks = []
+
         async def join_task(process: multiprocessing.Process):
             nonlocal process_exit_code
             try:
@@ -873,6 +879,7 @@ class Service:
             queue_stdio_exec = QueueStdIOExec(stdio_queue)
             stdio_exec = queue_stdio_exec.exec
             stdio_exec_all = queue_stdio_exec.exec_all
+            after_cancel_tasks.append(stdio_exec_all)
             is_execed = True
             while True:
                 try:
@@ -880,10 +887,8 @@ class Service:
                         await asyncio.sleep(0.1)
                     is_execed = await asyncio.get_event_loop().run_in_executor(None, stdio_exec)
                 except concurrent.futures._base.CancelledError:
-                    stdio_exec_all()
                     break
                 except asyncio.CancelledError:
-                    stdio_exec_all()
                     break
                 except Exception as e:
                     traceback.print_exc()
@@ -898,6 +903,8 @@ class Service:
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in pending:
             task.cancel()
+        for task in after_cancel_tasks:
+            task()
         for task in done:
             task.result()
         return process_exit_code

@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-24 14:45:40
 @LastEditors: Kermit
-@LastEditTime: 2023-02-03 19:39:13
+@LastEditTime: 2023-05-22 16:57:56
 '''
 
 wait_interval = 1
@@ -24,6 +24,16 @@ get_build_ws_url = 'wss://algospace.top/core/algo/build/ws/log'
 start_deploy_url = 'https://algospace.top/core/algo/deploy/start'
 get_deploy_ws_url = 'wss://algospace.top/core/algo/deploy/ws/log'
 upload_code_url = 'https://ruc.algospace.top:4443/core/algo/builder/file'
+
+input_param_str_max_length: int = 100000  # 输入参数的最大长度
+input_param_image_max_size: int = 100  # 输入图片的最大大小(MB)
+input_param_voice_max_size: int = 100  # 输入音频的最大大小(MB)
+input_param_video_max_size: int = 500  # 输入视频的最大大小(MB)
+
+input_param_str_default_max_length: int = 10000  # 输入参数的默认最大长度
+input_param_image_default_max_size: int = 2  # 输入图片的默认最大大小(MB)
+input_param_voice_default_max_size: int = 10  # 输入音频的默认最大大小(MB)
+input_param_video_default_max_size: int = 20  # 输入视频的默认最大大小(MB)
 
 
 class Algoinfo:
