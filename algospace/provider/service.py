@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
 @LastEditors: Kermit
-@LastEditTime: 2023-05-22 17:20:46
+@LastEditTime: 2023-07-04 01:50:15
 '''
 
 from typing import Any, Callable, Optional, List, Tuple, Union
@@ -904,7 +904,7 @@ class Service:
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in pending:
             task.cancel()
-        for task in done:
+        for task in pending.union(done):
             task.result()
         return process_exit_code
 

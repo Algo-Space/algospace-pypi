@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2022-10-06 12:30:47
 @LastEditors: Kermit
-@LastEditTime: 2023-03-30 05:11:30
+@LastEditTime: 2023-07-04 01:54:08
 '''
 
 from setuptools import setup, find_packages
@@ -40,7 +40,7 @@ setup(
         'requests',
         'requests-toolbelt>=0.9.1',
         'websocket-client',
-        'gradio>=3.0'
+        'gradio>=3.0, <4.0',
     ],
     python_requires='>=3.7',
     classifiers=[
