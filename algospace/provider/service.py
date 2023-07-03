@@ -4,8 +4,6 @@
 @Description: 算法提供者核心服务
 @Author: Kermit
 @Date: 2022-11-05 16:46:46
-@LastEditors: Kermit
-@LastEditTime: 2023-07-04 01:50:15
 '''
 
 from typing import Any, Callable, Optional, List, Tuple, Union
@@ -847,6 +845,8 @@ class Service:
 
         self.algo_logger.info(f'Waiting for service launched...')
 
+        after_cancel_tasks = []
+
         async def join_task(process: multiprocessing.Process):
             nonlocal process_exit_code
             try:
@@ -879,6 +879,7 @@ class Service:
             queue_stdio_exec = QueueStdIOExec(stdio_queue)
             stdio_exec = queue_stdio_exec.exec
             stdio_exec_all = queue_stdio_exec.exec_all
+            after_cancel_tasks.append(stdio_exec_all)
             is_execed = True
             while True:
                 try:
@@ -886,10 +887,8 @@ class Service:
                         await asyncio.sleep(0.1)
                     is_execed = await asyncio.get_event_loop().run_in_executor(None, stdio_exec)
                 except concurrent.futures._base.CancelledError:
-                    stdio_exec_all()
                     break
                 except asyncio.CancelledError:
-                    stdio_exec_all()
                     break
                 except Exception as e:
                     traceback.print_exc()
@@ -904,7 +903,9 @@ class Service:
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in pending:
             task.cancel()
-        for task in pending.union(done):
+        for task in after_cancel_tasks:
+            task()
+        for task in done:
             task.result()
         return process_exit_code
 
