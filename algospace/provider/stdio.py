@@ -4,8 +4,6 @@
 @Description: 标准输入输出处理
 @Author: Kermit
 @Date: 2022-11-07 14:56:36
-@LastEditors: Kermit
-@LastEditTime: 2023-04-10 16:37:02
 '''
 
 import sys
