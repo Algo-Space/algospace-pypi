@@ -811,7 +811,6 @@ class Service:
                                                        fn_req_queue_list,
                                                        fn_res_queue_list),
                                                  daemon=True)
-            fn_process.start()
             return fn_process
 
         def create_service_process():
@@ -823,7 +822,6 @@ class Service:
                                                             fn_res_queue_list,
                                                             gradio_port_con2),
                                                       daemon=True)
-            service_process.start()
             return service_process
 
         def create_gradio_process():
@@ -835,19 +833,17 @@ class Service:
                                                            fn_res_queue_list,
                                                            gradio_port_con1),
                                                      daemon=True)
-            gradio_process.start()
             return gradio_process
 
-        fn_process = create_fn_process()
-        service_process = create_service_process()
-        gradio_process = create_gradio_process()
         process_exit_code = None
 
         self.algo_logger.info(f'Waiting for service launched...')
 
-        async def join_task(process: multiprocessing.Process):
+        async def join_task(process_creator: Callable[[], multiprocessing.Process]):
             nonlocal process_exit_code
+            process = process_creator()
             try:
+                process.start()
                 await asyncio.get_event_loop().run_in_executor(None, process.join)
                 process_exit_code = process.exitcode
             except:
@@ -894,9 +890,9 @@ class Service:
                     self.algo_logger.error(f'Handle subprocess stdio error: {str(e)}')
 
         # 当有任务抛出异常时，停止所有任务
-        tasks = [join_task(fn_process),
-                 join_task(service_process),
-                 join_task(gradio_process),
+        tasks = [join_task(create_fn_process),
+                 join_task(create_service_process),
+                 join_task(create_gradio_process),
                  heartbeat_task(),
                  subprocess_stdio_task()]
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
