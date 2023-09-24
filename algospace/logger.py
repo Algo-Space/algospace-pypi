@@ -5,7 +5,7 @@
 @Author: Kermit
 @Date: 2023-02-03 16:29:34
 @LastEditors: Kermit
-@LastEditTime: 2023-09-24 16:47:32
+@LastEditTime: 2023-09-24 21:16:35
 '''
 
 
@@ -19,19 +19,19 @@ class Logger:
 
     def info(self, *msg: object) -> None:
         print(*([f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]']
-              if self.is_show_time else []), f'[{self.scope}]', '[INFO]', *msg)
+              if self.is_show_time else []), '[INFO]', f'[{self.scope}]', *msg)
 
     def error(self, *msg: object) -> None:
         print(*([f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]']
-              if self.is_show_time else []), f'[{self.scope}]', '[ERROR]', *msg)
+              if self.is_show_time else []), '[ERROR]', f'[{self.scope}]', *msg)
 
     def debug(self, *msg: object) -> None:
         print(*([f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]']
-              if self.is_show_time else []), f'[{self.scope}]', '[DEBUG]', *msg)
+              if self.is_show_time else []), '[DEBUG]', f'[{self.scope}]', *msg)
 
     def warning(self, *msg: object) -> None:
         print(*([f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}]']
-              if self.is_show_time else []), f'[{self.scope}]', '[WARNING]', *msg)
+              if self.is_show_time else []), '[WARNING]', f'[{self.scope}]', *msg)
 
 
 algospace_logger = Logger('AlgoSpace', is_show_time=True)
