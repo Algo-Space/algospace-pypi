@@ -30,7 +30,7 @@ def run_cloud_deploy(config_path: str, reset: bool = False):
     algorithm_info = Algoinfo(algorithm_config.name, algorithm_config.version)
     if not login(secret=algorithm_config.secret, username=algorithm_config.username, password=algorithm_config.password, privilege='PROVIDER'):
         algospace_logger.error('Login failed. Please check your secret or password.')
-        exit(1)
+        exit(-1)
 
     try:
         enroll(algorithm_config.name,
@@ -44,7 +44,7 @@ def run_cloud_deploy(config_path: str, reset: bool = False):
                algorithm_config.config_file_content)
     except Exception as e:
         algospace_logger.error(f'Enroll failed: {str(e)}')
-        exit(1)
+        exit(-1)
 
     if reset and get_service_status(algorithm_config.name, algorithm_config.version) == 'built':
         try:
@@ -52,7 +52,7 @@ def run_cloud_deploy(config_path: str, reset: bool = False):
         except Exception as e:
             traceback.print_exc()
             algospace_logger.error(f'Reset status error: {str(e)}')
-            exit(1)
+            exit(-1)
 
     if get_service_status(algorithm_config.name, algorithm_config.version) == 'unready':
         try:
@@ -64,7 +64,7 @@ def run_cloud_deploy(config_path: str, reset: bool = False):
         except Exception as e:
             traceback.print_exc()
             algospace_logger.error(f'Upload error: {str(e)}')
-            exit(1)
+            exit(-1)
 
         try:
             start_build_image(algorithm_config.name, algorithm_config.version, config_path)
@@ -72,7 +72,7 @@ def run_cloud_deploy(config_path: str, reset: bool = False):
         except Exception as e:
             traceback.print_exc()
             algospace_logger.error(f'Start build error: {str(e)}')
-            exit(1)
+            exit(-1)
 
     if get_service_status(algorithm_config.name, algorithm_config.version) in ('built', 'building', 'pending', 'unready'):
         try:
@@ -81,7 +81,7 @@ def run_cloud_deploy(config_path: str, reset: bool = False):
         except Exception as e:
             traceback.print_exc()
             algospace_logger.error(f'Get build log error: {str(e)}')
-            exit(1)
+            exit(-1)
 
         while get_service_status(algorithm_config.name, algorithm_config.version) in ('building', 'pending'):
             time.sleep(1)
@@ -91,7 +91,7 @@ def run_cloud_deploy(config_path: str, reset: bool = False):
             algospace_logger.error('After modification, please run `algospace cloud:deploy` again.')
             algospace_logger.error(
                 f'Or go to {algorithm_info.algorithm_cloud_site} to replace part of files uploaded. (Avoid re-uploading the entire code)')
-            exit(1)
+            exit(-1)
         if get_service_status(algorithm_config.name, algorithm_config.version) == 'built':
             algospace_logger.info('Build successfully!')
 
@@ -102,7 +102,7 @@ def run_cloud_deploy(config_path: str, reset: bool = False):
         except Exception as e:
             traceback.print_exc()
             algospace_logger.error(f'Start deploy error: {str(e)}')
-            exit(1)
+            exit(-1)
 
     if get_service_status(algorithm_config.name, algorithm_config.version) in ('deployed', 'deploying', 'waiting', 'built'):
         try:
@@ -113,7 +113,7 @@ def run_cloud_deploy(config_path: str, reset: bool = False):
         except Exception as e:
             traceback.print_exc()
             algospace_logger.error(f'Get deploy log error: {str(e)}')
-            exit(1)
+            exit(-1)
 
         while get_service_status(algorithm_config.name, algorithm_config.version) in ('deploying', 'waiting'):
             time.sleep(1)
@@ -123,7 +123,7 @@ def run_cloud_deploy(config_path: str, reset: bool = False):
             algospace_logger.error('After modification, please run `algospace cloud:deploy --reset` to deploy again.')
             algospace_logger.error(
                 f'Or go to {algorithm_info.algorithm_cloud_site} to replace part of files uploaded. (Avoid re-uploading the entire code)')
-            exit(1)
+            exit(-1)
         if get_service_status(algorithm_config.name, algorithm_config.version) == 'deployed':
             algospace_logger.info('Deploy successfully!')
             algospace_logger.info('You can run `algospace cloud:log` to view the running log.')
@@ -134,7 +134,7 @@ def show_running_log(config_path: str):
     algorithm_config = ConfigLoader(config_path)
     if not login(secret=algorithm_config.secret, username=algorithm_config.username, password=algorithm_config.password, privilege='PROVIDER'):
         algospace_logger.error('Login failed. Please check your secret or password.')
-        exit(1)
+        exit(-1)
 
     if get_service_status(algorithm_config.name, algorithm_config.version) == 'deployed':
         try:
@@ -142,7 +142,7 @@ def show_running_log(config_path: str):
         except Exception as e:
             traceback.print_exc()
             algospace_logger.error(f'Get running log error: {str(e)}')
-            exit(1)
+            exit(-1)
     else:
         algospace_logger.warning('The service is not deployed. Please run `algospace cloud:deploy` first.')
 

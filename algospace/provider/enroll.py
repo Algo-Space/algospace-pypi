@@ -24,7 +24,7 @@ def enroll_from_config(config_path: str):
         algospace_logger.info('Login...')
         if not login(secret=algorithm_config.secret, username=algorithm_config.username, password=algorithm_config.password, privilege='PROVIDER'):
             algospace_logger.error('Login failed. Please check your secret or password.')
-            exit(1)
+            exit(-1)
         algospace_logger.info('Enroll processing...')
         enroll(algorithm_config.name, algorithm_config.version, algorithm_config.service_input, algorithm_config.service_output,
                algorithm_config.description, algorithm_config.scope, algorithm_config.chinese_name, algorithm_config.document, algorithm_config.config_file_content)
@@ -33,7 +33,7 @@ def enroll_from_config(config_path: str):
     except Exception as e:
         traceback.print_exc()
         algospace_logger.error(f'Enroll error: {str(e)}')
-        exit(1)
+        exit(-1)
 
 
 def enroll(name: str, version: str, input: dict, output: dict, description: str, scope: str, chinese_name: str, document: str, config_file: str):
