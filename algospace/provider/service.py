@@ -473,7 +473,7 @@ class Service:
         except Exception as e:
             traceback.print_exc()
             self.algo_logger.error(f'Launch {type} error: {str(e)}')
-            exit(1)
+            exit(-1)
 
     def launch_service(self,
                        fn_lock_list: List[Lock],
@@ -811,7 +811,7 @@ class Service:
                                                        fn_req_queue_list,
                                                        fn_res_queue_list),
                                                  daemon=True)
-            return fn_process
+            return fn_process, 'FN'
 
         def create_service_process():
             service_process = multiprocessing.Process(target=self.launch,
@@ -822,7 +822,7 @@ class Service:
                                                             fn_res_queue_list,
                                                             gradio_port_con2),
                                                       daemon=True)
-            return service_process
+            return service_process, 'SERVICE'
 
         def create_gradio_process():
             gradio_process = multiprocessing.Process(target=self.launch,
@@ -833,19 +833,22 @@ class Service:
                                                            fn_res_queue_list,
                                                            gradio_port_con1),
                                                      daemon=True)
-            return gradio_process
+            return gradio_process, 'GRADIO'
 
         process_exit_code = None
+        process_exit_code_from = None
 
         self.algo_logger.info(f'Waiting for service launched...')
 
-        async def join_task(process_creator: Callable[[], multiprocessing.Process]):
+        async def join_task(process_creator: Callable[[], Tuple[multiprocessing.Process, str]]):
             nonlocal process_exit_code
-            process = process_creator()
+            nonlocal process_exit_code_from
+            process, process_name = process_creator()
             try:
                 process.start()
                 await asyncio.get_event_loop().run_in_executor(None, process.join)
                 process_exit_code = process.exitcode
+                process_exit_code_from = process_name
             except:
                 if process.is_alive():
                     process.kill()
@@ -901,21 +904,28 @@ class Service:
         await asyncio.wait(pending, return_when=asyncio.ALL_COMPLETED)
         for task in done:
             task.result()
-        return process_exit_code
+        return process_exit_code, process_exit_code_from
 
 
 def run_service(config_path: str, fetch_mode: str = 'listen') -> None:
     loop = asyncio.get_event_loop()
     service_coroutine = None
     exit_code = None
+    exit_name = None
     try:
         algospace_logger.info('Init.')
         service = Service(config_path, fetch_mode)
         service_coroutine = service.start()
-        exit_code = loop.run_until_complete(service_coroutine)
+        service_result = loop.run_until_complete(service_coroutine)
+        if service_result is not None:
+            exit_code, exit_name = service_result
+        if exit_code is not None and exit_code not in (0, -1) and exit_name is not None:
+            algospace_logger.error(f'Exit with code {exit_code} from {exit_name} subprocess.')
+            algospace_logger.error('If error traceback is not shown, it may be caused by the subprocess has been exited by `import` some third package.')
+            algospace_logger.error('Please restrict the version of `import` packages.')
     except:
         traceback.print_exc()
-        exit_code = 1
+        exit_code = -1
     finally:
         algospace_logger.info('Exit.')
     exit(exit_code or 0)

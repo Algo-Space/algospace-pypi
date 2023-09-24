@@ -28,4 +28,4 @@ def generate_config():
     except Exception as e:
         traceback.print_exc()
         algospace_logger_notime.error('Init Error: ' + str(e))
-        exit(1)
+        exit(-1)

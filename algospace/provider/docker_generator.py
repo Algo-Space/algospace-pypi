@@ -41,7 +41,7 @@ def generate_docker_config(config_path: str,
     except Exception as e:
         traceback.print_exc()
         algospace_logger_notime.error('Generate error: ' + str(e))
-        exit(1)
+        exit(-1)
 
 
 def gen_requirements_txt(requirements: list[str]):
