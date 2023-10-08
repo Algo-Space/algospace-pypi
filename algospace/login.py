@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-'''
+"""
 @Description: 
 @Author: Ecohnoch(xcy)
 @Date: 2022-10-06 12:30:47
-@LastEditors: Kermit
-@LastEditTime: 2023-05-10 16:43:49
-'''
+"""
 
 import time
 from typing import Optional
@@ -26,16 +24,16 @@ class Singleton(type):
 
 
 class LoginInstance(metaclass=Singleton):
-    def __init__(self, cookie: str = '', timestamp: int = 0):
+    def __init__(self, cookie: str = "", timestamp: int = 0):
         self.cookie = cookie
         self.timestamp = timestamp
-        self.secret = ''
-        self.username = ''
-        self.password = ''
-        self.privilege = 'CUSTOMER'
+        self.secret = ""
+        self.username = ""
+        self.password = ""
+        self.privilege = "CUSTOMER"
 
     def ever_logined(self) -> bool:
-        return self.secret != '' or (self.username != '' and self.password != '')
+        return self.secret != "" or (self.username != "" and self.password != "")
 
     def is_outdated(self) -> bool:
         curr_timestamp = int(time.time())
@@ -47,42 +45,50 @@ class LoginInstance(metaclass=Singleton):
 
     def get_cookie(self) -> str:
         if not self.ever_logined():
-            raise LoginError('LoginError: No login before.')
+            raise LoginError("LoginError: No login before.")
         if self.is_outdated():
             self.login()
         return self.cookie
 
     def get_header(self) -> dict:
-        return {'Cookie': self.get_cookie()}
+        return {"Cookie": self.get_cookie()}
 
-    def login(self,
-              secret: Optional[str] = '',
-              username: Optional[str] = '',
-              password: Optional[str] = '',
-              privilege: Optional[str] = '') -> bool:
+    def login(
+        self,
+        secret: Optional[str] = "",
+        username: Optional[str] = "",
+        password: Optional[str] = "",
+        privilege: Optional[str] = "",
+    ) -> bool:
         self.secret = secret or self.secret
         self.username = username or self.username
         self.password = password or self.password
         self.privilege = privilege or self.privilege
         try:
-            login_url = config.login_by_secret_url if self.secret != '' else config.login_url
-            login_data = {
-                'user_id': self.username,
-                'password': self.password
-            } if self.secret == '' else {
-                'secret': self.secret
-            }
+            login_url = (
+                config.login_by_secret_url if self.secret != "" else config.login_url
+            )
+            login_data = (
+                {"user_id": self.username, "password": self.password}
+                if self.secret == ""
+                else {"secret": self.secret}
+            )
             response = requests.post(login_url, data=login_data)
             if response.status_code != 200 and response.status_code != 201:
                 raise Exception(response.status_code, response.content.decode())
-            if response.json()['status'] != 200:
-                raise Exception(response.json().get('err_msg', 'Login error.'))
-            if self.secret != '':
-                if response.json()['data']['privilege'] != 'ADMINISTER' and response.json()['data']['privilege'] != self.privilege:
-                    raise LoginError(f'LoginError: Secret privilege is not {self.privilege}.')
-                self.username = response.json()['data']['user_id']
-                self.password = ''
-            self.set_cookie(response.headers['Set-Cookie'], int(time.time()))
+            if response.json()["status"] != 200:
+                raise Exception(response.json().get("err_msg", "Login error."))
+            if self.secret != "":
+                if (
+                    response.json()["data"]["privilege"] != "ADMINISTER"
+                    and response.json()["data"]["privilege"] != self.privilege
+                ):
+                    raise LoginError(
+                        f"LoginError: Secret privilege is not {self.privilege}."
+                    )
+                self.username = response.json()["data"]["user_id"]
+                self.password = ""
+            self.set_cookie(response.headers["Set-Cookie"], int(time.time()))
             return True
         except Exception as e:
             traceback.print_exc()

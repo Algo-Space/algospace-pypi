@@ -1,4 +1,4 @@
-''' AlgoSpace 算法服务配置文件 '''
+""" AlgoSpace 算法服务配置文件 """
 
 from algospace import InputType, OutputType
 
@@ -38,21 +38,21 @@ from algospace import InputType, OutputType
 #       }
 ############################
 
-name = 'example_name'
-version = 'v1.0'
-secret = '****'
-service_filepath = './main.py'
-service_function = 'example_fn'
+name = "example_name"
+version = "v1.0"
+secret = "****"
+service_filepath = "./main.py"
+service_function = "example_fn"
 service_input = {
-    'arg0': InputType.String(describe=''),
+    "arg0": InputType.String(describe=""),
 }
 service_output = {
-    'arg0': OutputType.String(describe=''),
+    "arg0": OutputType.String(describe=""),
 }
 service_input_examples = []
 service_timeout = 60
 service_max_parallel = 1
-service_tmp_dir = './tmp'
+service_tmp_dir = "./tmp"
 
 ############################
 # 算法详情选项，可在网页端进行修改:
@@ -62,10 +62,10 @@ service_tmp_dir = './tmp'
 #   - document_filepath:    文档文件路径，详细介绍算法的要点，可选格式：纯文本、Markdown、HTML，相对于本文件路径，如：'./README.md'
 ############################
 
-description = ''
-scope = 'PRIVATE'
-chinese_name = ''
-document_filepath = ''
+description = ""
+scope = "PRIVATE"
+chinese_name = ""
+document_filepath = ""
 
 ############################
 # 容器式部署选项，用于 generate 命令生成 docker 相关配置:
@@ -76,7 +76,7 @@ document_filepath = ''
 
 requirements = []
 pre_command = []
-base_image = 'python:3.9'
+base_image = "python:3.9"
 
 ############################
 # 需要自主实现更复杂的 Gradio 应用时，可使用以下选项替代自动生成的 Gradio 应用:
@@ -90,7 +90,7 @@ base_image = 'python:3.9'
 #   若修改 Gradio 的实现代码，请以新版本号启动。
 ############################
 
-gradio_launch_filepath = ''
-gradio_launch_function = ''
-gradio_launch_host = '127.0.0.1'
+gradio_launch_filepath = ""
+gradio_launch_function = ""
+gradio_launch_host = "127.0.0.1"
 gradio_launch_port = 7860

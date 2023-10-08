@@ -25,13 +25,13 @@
                 "functionParams": "ts"
             },
             "python": {
-                "head": "'''",
+                "head": "\"\"\"",
                 "middle": "@",
-                "end": "'''",
+                "end": "\"\"\"",
                 "functionSymbol": {
-                    "head": "'''",
+                    "head": "\"\"\"",
                     "middle": ":",
-                    "end": "'''",
+                    "end": "\"\"\"",
                 },
                 "functionParams": "python"
             }
@@ -144,9 +144,7 @@
     "fileheader.customMade": {
         "Description": "",
         "Author": "git config user.name",
-        "Date": "Do not edit",
-        "LastEditors": "git config user.name",
-        "LastEditTime": "Do not Edit"
+        "Date": "Do not edit"
     },
     "fileheader.cursorMode": {
         "param": "",
