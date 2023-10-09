@@ -87,7 +87,8 @@ def gen_requirements_txt(requirements: list[str], compute_platform: str):
                         torch_packages,
                     )
                 )
-                and "--index-url" not in requirements_item
+                and " --index-url" not in requirements_item
+                and " -i" not in requirements_item
             ):
                 if compute_platform == "cpu":
                     postfix_item = " --index-url https://download.pytorch.org/whl/cpu"
