@@ -1,29 +1,27 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-'''
+"""
 @Description: 
 @Author: Kermit
 @Date: 2022-10-24 14:45:40
-@LastEditors: Kermit
-@LastEditTime: 2023-05-22 16:57:56
-'''
+"""
 
 wait_interval = 1
 call_interval = 0.1
 
 
-enroll_url = 'https://algospace.top/core/algo/pypi/enroll'
-verify_config_url = 'https://algospace.top/core/algo/pypi/verify'
-is_component_normal_url = 'https://algospace.top/core/algo/pypi/is_component_normal'
-get_service_status_url = 'https://algospace.top/core/algo/pypi/cloud/status'
-heartbeat_url = 'https://algospace.top/core/heartbeat/send'
-storage_file_url = 'https://algospace.top/core/storage/file'
-start_build_url = 'https://algospace.top/core/algo/build/start'
-reset_status_url = 'https://algospace.top/core/algo/build/reset'
-get_build_ws_url = 'wss://algospace.top/core/algo/build/ws/log'
-start_deploy_url = 'https://algospace.top/core/algo/deploy/start'
-get_deploy_ws_url = 'wss://algospace.top/core/algo/deploy/ws/log'
-upload_code_url = 'https://ruc.algospace.top:4443/core/algo/builder/file'
+enroll_url = "https://algospace.top/core/algo/pypi/enroll"
+verify_config_url = "https://algospace.top/core/algo/pypi/verify"
+is_component_normal_url = "https://algospace.top/core/algo/pypi/is_component_normal"
+get_service_status_url = "https://algospace.top/core/algo/pypi/cloud/status"
+heartbeat_url = "https://algospace.top/core/heartbeat/send"
+storage_file_url = "https://algospace.top/core/storage/file"
+start_build_url = "https://algospace.top/core/algo/build/start"
+reset_status_url = "https://algospace.top/core/algo/build/reset"
+get_build_ws_url = "wss://algospace.top/core/algo/build/ws/log"
+start_deploy_url = "https://algospace.top/core/algo/deploy/start"
+get_deploy_ws_url = "wss://algospace.top/core/algo/deploy/ws/log"
+upload_code_url = "https://ruc.algospace.top:4443/core/algo/builder/file"
 
 input_param_str_max_length: int = 100000  # 输入参数的最大长度
 input_param_image_max_size: int = 100  # 输入图片的最大大小(MB)
@@ -43,19 +41,21 @@ class Algoinfo:
 
     @property
     def full_name(self):
-        return f'{self.name}_{self.version}'
+        return f"{self.name}_{self.version}"
 
     @property
     def lower_name(self):
-        return self.full_name.replace('-', '_').replace('.',  '_').lower()
+        return self.full_name.replace("-", "_").replace(".", "_").lower()
 
     @property
     def upper_name(self):
-        return self.full_name.replace('-', '_').replace('.',  '_').upper()
+        return self.full_name.replace("-", "_").replace(".", "_").upper()
 
     @property
     def image_name(self):
-        return self.name.replace('@', '_').lower()  # 镜像的名称需要限制为 [a-z0-9], 其中可以出现的符号为 [-._]
+        return self.name.replace(
+            "@", "_"
+        ).lower()  # 镜像的名称需要限制为 [a-z0-9], 其中可以出现的符号为 [-._]
 
     @property
     def image_version(self):
@@ -63,8 +63,8 @@ class Algoinfo:
 
     @property
     def algorithm_site(self):
-        return f'https://algospace.top/algorithm/{self.name}/{self.version}'
+        return f"https://algospace.top/algorithm/{self.name}/{self.version}"
 
     @property
     def algorithm_cloud_site(self):
-        return self.algorithm_site + '/cloud'
+        return self.algorithm_site + "/cloud"

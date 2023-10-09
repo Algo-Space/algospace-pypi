@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-'''
+"""
 @Description: Docker 配置生成器
 @Author: Kermit
 @Date: 2022-11-11 13:21:18
-@LastEditors: Kermit
-@LastEditTime: 2023-02-03 17:10:54
-'''
+"""
 
 import traceback
 import os
@@ -15,88 +13,157 @@ from .config import Algoinfo
 from algospace.logger import algospace_logger_notime
 
 
-def generate_docker_config(config_path: str,
-                           generate_debian_mirror: str = '',
-                           use_buildkit_debian_cache: bool = False,
-                           use_buildkit_pip_cache: bool = False):
+def generate_docker_config(
+    config_path: str,
+    generate_debian_mirror: str = "",
+    use_buildkit_debian_cache: bool = False,
+    use_buildkit_pip_cache: bool = False,
+    compute_platform: str = "cpu",
+):
     try:
         algorithm_config = ConfigLoader(config_path)
         algorithm_info = Algoinfo(algorithm_config.name, algorithm_config.version)
 
-        gen_requirements_txt(algorithm_config.requirements)
-        algospace_logger_notime.info('[Step 1/4] Requirements has been successfully generated!')
-        gen_dockerfile(algorithm_config.pre_command,
-                       algorithm_config.base_image,
-                       config_path,
-                       generate_debian_mirror,
-                       use_buildkit_debian_cache,
-                       use_buildkit_pip_cache)
-        algospace_logger_notime.info('[Step 2/4] Dockerfile has been successfully generated!')
-        gen_docker_compose(algorithm_info.image_name, algorithm_info.image_version, algorithm_info.lower_name)
-        algospace_logger_notime.info('[Step 3/4] Docker compose file has been successfully generated!')
-        gen_control_script(algorithm_info.image_name, algorithm_info.image_version)
-        algospace_logger_notime.info('[Step 4/4] Docker control file has been successfully generated!')
+        gen_requirements_txt(algorithm_config.requirements, compute_platform)
         algospace_logger_notime.info(
-            f'Generate successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}')
+            "[Step 1/4] Requirements has been successfully generated!"
+        )
+        gen_dockerfile(
+            algorithm_config.pre_command,
+            algorithm_config.base_image,
+            config_path,
+            generate_debian_mirror,
+            use_buildkit_debian_cache,
+            use_buildkit_pip_cache,
+        )
+        algospace_logger_notime.info(
+            "[Step 2/4] Dockerfile has been successfully generated!"
+        )
+        gen_docker_compose(
+            algorithm_info.image_name,
+            algorithm_info.image_version,
+            algorithm_info.lower_name,
+        )
+        algospace_logger_notime.info(
+            "[Step 3/4] Docker compose file has been successfully generated!"
+        )
+        gen_control_script(algorithm_info.image_name, algorithm_info.image_version)
+        algospace_logger_notime.info(
+            "[Step 4/4] Docker control file has been successfully generated!"
+        )
+        algospace_logger_notime.info(
+            f"Generate successfully! Name: {algorithm_config.name}, Version: {algorithm_config.version}"
+        )
     except Exception as e:
         traceback.print_exc()
-        algospace_logger_notime.error('Generate error: ' + str(e))
+        algospace_logger_notime.error("Generate error: " + str(e))
         exit(-1)
 
 
-def gen_requirements_txt(requirements: list[str]):
-    with open('algospace-requirements.txt', 'w') as f:
+def gen_requirements_txt(requirements: list[str], compute_platform: str):
+    torch_packages = ["torch", "torchaudio", "torchvision"]
+
+    with open("algospace-requirements.txt", "w") as f:
         for requirements_item in requirements:
-            if 'torch==' in requirements_item.replace(' ', ''):
-                # 如果是Pytorch，要从官网下载可支持版本，否则会出问题，查看 Dockerfile 那里
-                f.write('--find-links https://download.pytorch.org/whl/torch_stable.html\n')
-                f.write(requirements_item + '\n')
-            elif 'torchvision' in requirements_item:
-                f.write('--find-links https://download.pytorch.org/whl/torch_stable.html\n')
-                f.write(requirements_item + '\n')
-            else:
-                f.write(requirements_item + '\n')
+            requirements_item = requirements_item.strip()
+            postfix_item = ""
+
+            # 如果是 torch 系列包，需要根据 compute_platform 添加后缀
+            if (
+                any(
+                    map(
+                        lambda x: (
+                            requirements_item == x
+                            or requirements_item.startswith(x + " ")
+                            or requirements_item.startswith(x + "==")
+                            or requirements_item.startswith(x + ">=")
+                            or requirements_item.startswith(x + "<=")
+                            or requirements_item.startswith(x + ">")
+                            or requirements_item.startswith(x + "<")
+                            or requirements_item.startswith(x + "~")
+                            or requirements_item.startswith(x + "!=")
+                            or requirements_item.startswith(x + "[")
+                        ),
+                        torch_packages,
+                    )
+                )
+                and "--index-url" not in requirements_item
+            ):
+                if compute_platform == "cpu":
+                    postfix_item = " --index-url https://download.pytorch.org/whl/cpu"
+                elif compute_platform == "cuda12.1":
+                    postfix_item = " --index-url https://download.pytorch.org/whl/cu121"
+                elif compute_platform == "cuda11.8":
+                    postfix_item = " --index-url https://download.pytorch.org/whl/cu118"
+                elif compute_platform == "rocm5.6":
+                    postfix_item = (
+                        " --index-url https://download.pytorch.org/whl/rocm5.6"
+                    )
+
+            if postfix_item != "":
+                requirements_item += postfix_item
+            f.write(requirements_item + "\n")
 
 
-def gen_dockerfile(pre_command: list[str],
-                   base_image: str,
-                   config_path: str,
-                   generate_debian_mirror: str = '',
-                   use_buildkit_debian_cache: bool = False,
-                   use_buildkit_pip_cache: bool = False):
-    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'algospace-dockerfile'), 'r', encoding='utf-8') as f:
+def gen_dockerfile(
+    pre_command: list[str],
+    base_image: str,
+    config_path: str,
+    generate_debian_mirror: str = "",
+    use_buildkit_debian_cache: bool = False,
+    use_buildkit_pip_cache: bool = False,
+):
+    with open(
+        os.path.join(
+            os.path.split(__file__)[0], "templates", "docker", "algospace-dockerfile"
+        ),
+        "r",
+        encoding="utf-8",
+    ) as f:
         template = f.read()
 
-    template = template.replace('{BASE_IMAGE}', base_image)
-    template = template.replace('{CONFIG_PATH}', config_path)
+    template = template.replace("{BASE_IMAGE}", base_image)
+    template = template.replace("{CONFIG_PATH}", config_path)
 
     if use_buildkit_debian_cache or use_buildkit_pip_cache:
         template = template.replace(
-            '{FIRST_COMMENT}', '# syntax=docker/dockerfile:experimental\n# Auto generated by AlgoSpace.')
+            "{FIRST_COMMENT}",
+            "# syntax=docker/dockerfile:experimental\n# Auto generated by AlgoSpace.",
+        )
     else:
-        template = template.replace('{FIRST_COMMENT}', '# Auto generated by AlgoSpace.')
+        template = template.replace("{FIRST_COMMENT}", "# Auto generated by AlgoSpace.")
 
     if not use_buildkit_pip_cache:
-        template = template.replace('{PIP_RUN}', 'RUN ')
+        template = template.replace("{PIP_RUN}", "RUN ")
     else:
-        template = template.replace('{PIP_RUN}', 'RUN --mount=type=cache,target=/root/.cache/pip \\\n    ')
+        template = template.replace(
+            "{PIP_RUN}", "RUN --mount=type=cache,target=/root/.cache/pip \\\n    "
+        )
 
-    pre_command = list(filter(lambda x: x.strip() != '' and not x.strip().startswith('#'), pre_command))
-    pre_command_lines = ''
+    pre_command = list(
+        filter(lambda x: x.strip() != "" and not x.strip().startswith("#"), pre_command)
+    )
+    pre_command_lines = ""
     is_curr_first_pre_command_line = True
     if len(pre_command) > 0:
-        pre_command_lines += '\n'
+        pre_command_lines += "\n"
 
         if use_buildkit_debian_cache:
-            pre_command_lines += 'RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \\\n'
-            pre_command_lines += '    --mount=type=cache,target=/var/lib/apt,sharing=locked \\\n'
+            pre_command_lines += (
+                "RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \\\n"
+            )
+            pre_command_lines += (
+                "    --mount=type=cache,target=/var/lib/apt,sharing=locked \\\n"
+            )
             is_curr_first_pre_command_line = False
         else:
-            pre_command_lines += 'RUN '
+            pre_command_lines += "RUN "
 
-        if generate_debian_mirror == '163':
-            pre_command_lines += '    ' if not is_curr_first_pre_command_line else ''
-            pre_command_lines += 'mv /etc/apt/sources.list /etc/apt/sources.list.bak && \\\n'
+        if generate_debian_mirror == "163":
+            pre_command_lines += "    " if not is_curr_first_pre_command_line else ""
+            pre_command_lines += (
+                "mv /etc/apt/sources.list /etc/apt/sources.list.bak && \\\n"
+            )
             pre_command_lines += '    echo "deb http://mirrors.163.com/debian/ stretch main non-free contrib" >> /etc/apt/sources.list && \\\n'
             pre_command_lines += '    echo "deb http://mirrors.163.com/debian/ stretch-updates main non-free contrib" >> /etc/apt/sources.list && \\\n'
             pre_command_lines += '    echo "deb http://mirrors.163.com/debian/ stretch-backports main non-free contrib" >> /etc/apt/sources.list && \\\n'
@@ -105,11 +172,13 @@ def gen_dockerfile(pre_command: list[str],
             pre_command_lines += '    echo "deb-src http://mirrors.163.com/debian/ stretch-backports main non-free contrib" >> /etc/apt/sources.list && \\\n'
             pre_command_lines += '    echo "deb http://mirrors.163.com/debian-security/ stretch/updates main non-free contrib" >> /etc/apt/sources.list && \\\n'
             pre_command_lines += '    echo "deb-src http://mirrors.163.com/debian-security/ stretch/updates main non-free contrib" >> /etc/apt/sources.list && \\\n'
-            pre_command_lines += '    apt update && \\\n'
+            pre_command_lines += "    apt update && \\\n"
             is_curr_first_pre_command_line = False
-        elif generate_debian_mirror == 'aliyun':
-            pre_command_lines += '    ' if not is_curr_first_pre_command_line else ''
-            pre_command_lines += 'mv /etc/apt/sources.list /etc/apt/sources.list.bak && \\\n'
+        elif generate_debian_mirror == "aliyun":
+            pre_command_lines += "    " if not is_curr_first_pre_command_line else ""
+            pre_command_lines += (
+                "mv /etc/apt/sources.list /etc/apt/sources.list.bak && \\\n"
+            )
             pre_command_lines += '    echo "deb http://mirrors.aliyun.com/debian/ stretch main non-free contrib" >> /etc/apt/sources.list && \\\n'
             pre_command_lines += '    echo "deb http://mirrors.aliyun.com/debian/ stretch-updates main non-free contrib" >> /etc/apt/sources.list && \\\n'
             pre_command_lines += '    echo "deb http://mirrors.aliyun.com/debian/ stretch-backports main non-free contrib" >> /etc/apt/sources.list && \\\n'
@@ -118,11 +187,13 @@ def gen_dockerfile(pre_command: list[str],
             pre_command_lines += '    echo "deb-src http://mirrors.aliyun.com/debian/ stretch-backports main non-free contrib" >> /etc/apt/sources.list && \\\n'
             pre_command_lines += '    echo "deb http://mirrors.aliyun.com/debian-security/ stretch/updates main non-free contrib" >> /etc/apt/sources.list && \\\n'
             pre_command_lines += '    echo "deb-src http://mirrors.aliyun.com/debian-security/ stretch/updates main non-free contrib" >> /etc/apt/sources.list && \\\n'
-            pre_command_lines += '    apt update && \\\n'
+            pre_command_lines += "    apt update && \\\n"
             is_curr_first_pre_command_line = False
-        elif generate_debian_mirror == 'ustc':
-            pre_command_lines += '    ' if not is_curr_first_pre_command_line else ''
-            pre_command_lines += 'mv /etc/apt/sources.list /etc/apt/sources.list.bak && \\\n'
+        elif generate_debian_mirror == "ustc":
+            pre_command_lines += "    " if not is_curr_first_pre_command_line else ""
+            pre_command_lines += (
+                "mv /etc/apt/sources.list /etc/apt/sources.list.bak && \\\n"
+            )
             pre_command_lines += '    echo "deb http://mirrors.ustc.edu.cn/debian/ stretch main non-free contrib" >> /etc/apt/sources.list && \\\n'
             pre_command_lines += '    echo "deb http://mirrors.ustc.edu.cn/debian/ stretch-updates main non-free contrib" >> /etc/apt/sources.list && \\\n'
             pre_command_lines += '    echo "deb http://mirrors.ustc.edu.cn/debian/ stretch-backports main non-free contrib" >> /etc/apt/sources.list && \\\n'
@@ -131,11 +202,13 @@ def gen_dockerfile(pre_command: list[str],
             pre_command_lines += '    echo "deb-src http://mirrors.ustc.edu.cn/debian/ stretch-backports main non-free contrib" >> /etc/apt/sources.list && \\\n'
             pre_command_lines += '    echo "deb http://mirrors.ustc.edu.cn/debian-security/ stretch/updates main non-free contrib" >> /etc/apt/sources.list && \\\n'
             pre_command_lines += '    echo "deb-src http://mirrors.ustc.edu.cn/debian-security/ stretch/updates main non-free contrib" >> /etc/apt/sources.list && \\\n'
-            pre_command_lines += '    apt update && \\\n'
+            pre_command_lines += "    apt update && \\\n"
             is_curr_first_pre_command_line = False
-        elif generate_debian_mirror == 'tsinghua':
-            pre_command_lines += '    ' if not is_curr_first_pre_command_line else ''
-            pre_command_lines += 'mv /etc/apt/sources.list /etc/apt/sources.list.bak && \\\n'
+        elif generate_debian_mirror == "tsinghua":
+            pre_command_lines += "    " if not is_curr_first_pre_command_line else ""
+            pre_command_lines += (
+                "mv /etc/apt/sources.list /etc/apt/sources.list.bak && \\\n"
+            )
             pre_command_lines += '    echo "deb http://mirrors.tuna.tsinghua.edu.cn/debian/ stretch main non-free contrib" >> /etc/apt/sources.list && \\\n'
             pre_command_lines += '    echo "deb http://mirrors.tuna.tsinghua.edu.cn/debian/ stretch-updates main non-free contrib" >> /etc/apt/sources.list && \\\n'
             pre_command_lines += '    echo "deb http://mirrors.tuna.tsinghua.edu.cn/debian/ stretch-backports main non-free contrib" >> /etc/apt/sources.list && \\\n'
@@ -144,51 +217,87 @@ def gen_dockerfile(pre_command: list[str],
             pre_command_lines += '    echo "deb-src http://mirrors.tuna.tsinghua.edu.cn/debian/ stretch-backports main non-free contrib" >> /etc/apt/sources.list && \\\n'
             pre_command_lines += '    echo "deb http://mirrors.tuna.tsinghua.edu.cn/debian-security/ stretch/updates main non-free contrib" >> /etc/apt/sources.list && \\\n'
             pre_command_lines += '    echo "deb-src http://mirrors.tuna.tsinghua.edu.cn/debian-security/ stretch/updates main non-free contrib" >> /etc/apt/sources.list && \\\n'
-            pre_command_lines += '    apt update && \\\n'
+            pre_command_lines += "    apt update && \\\n"
             is_curr_first_pre_command_line = False
         else:
-            pre_command_lines += '    ' if not is_curr_first_pre_command_line else ''
-            pre_command_lines += 'apt update && \\\n'
+            pre_command_lines += "    " if not is_curr_first_pre_command_line else ""
+            pre_command_lines += "apt update && \\\n"
             is_curr_first_pre_command_line = False
 
         for index, command_item in enumerate(pre_command):
-            pre_command_lines += '    ' if not is_curr_first_pre_command_line else ''
+            pre_command_lines += "    " if not is_curr_first_pre_command_line else ""
             pre_command_lines += command_item
-            pre_command_lines += ' && \\\n' if index < len(pre_command) - 1 else '\n'
+            pre_command_lines += " && \\\n" if index < len(pre_command) - 1 else "\n"
             is_curr_first_pre_command_line = False
 
-    template = template.replace('{PRE_COMMAND}', pre_command_lines)
+    template = template.replace("{PRE_COMMAND}", pre_command_lines)
 
-    with open(os.path.join('algospace-dockerfile'), 'w') as f:
+    with open(os.path.join("algospace-dockerfile"), "w") as f:
         f.write(template)
 
 
 def gen_docker_compose(name: str, version: str, lower_name: str):
-    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'algospace-docker-compose.yml'), 'r', encoding='utf-8') as f:
+    with open(
+        os.path.join(
+            os.path.split(__file__)[0],
+            "templates",
+            "docker",
+            "algospace-docker-compose.yml",
+        ),
+        "r",
+        encoding="utf-8",
+    ) as f:
         template = f.read()
 
-    template = template.replace('{ALGORITHM_LOWER_NAME}', lower_name)
-    template = template.replace('{ALGORITHM_NAME}', name)
-    template = template.replace('{ALGORITHM_VERSION}', version)
+    template = template.replace("{ALGORITHM_LOWER_NAME}", lower_name)
+    template = template.replace("{ALGORITHM_NAME}", name)
+    template = template.replace("{ALGORITHM_VERSION}", version)
 
-    with open(os.path.join('algospace-docker-compose.yml'), 'w') as f:
+    with open(os.path.join("algospace-docker-compose.yml"), "w") as f:
         f.write(template)
 
 
 def gen_control_script(name: str, version: str):
-    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'algospace-docker-start.sh'), 'r', encoding='utf-8') as f:
+    with open(
+        os.path.join(
+            os.path.split(__file__)[0],
+            "templates",
+            "docker",
+            "algospace-docker-start.sh",
+        ),
+        "r",
+        encoding="utf-8",
+    ) as f:
         template = f.read()
-    with open(os.path.join('algospace-docker-start.sh'), 'w') as f:
-        template = template.replace('{ALGORITHM_NAME}', name)
-        template = template.replace('{ALGORITHM_VERSION}', version)
+    with open(os.path.join("algospace-docker-start.sh"), "w") as f:
+        template = template.replace("{ALGORITHM_NAME}", name)
+        template = template.replace("{ALGORITHM_VERSION}", version)
         f.write(template)
 
-    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'algospace-docker-stop.sh'), 'r', encoding='utf-8') as f:
+    with open(
+        os.path.join(
+            os.path.split(__file__)[0],
+            "templates",
+            "docker",
+            "algospace-docker-stop.sh",
+        ),
+        "r",
+        encoding="utf-8",
+    ) as f:
         template = f.read()
-    with open(os.path.join('algospace-docker-stop.sh'), 'w') as f:
+    with open(os.path.join("algospace-docker-stop.sh"), "w") as f:
         f.write(template)
 
-    with open(os.path.join(os.path.split(__file__)[0], 'templates', 'docker', 'algospace-docker-logs.sh'), 'r', encoding='utf-8') as f:
+    with open(
+        os.path.join(
+            os.path.split(__file__)[0],
+            "templates",
+            "docker",
+            "algospace-docker-logs.sh",
+        ),
+        "r",
+        encoding="utf-8",
+    ) as f:
         template = f.read()
-    with open(os.path.join('algospace-docker-logs.sh'), 'w') as f:
+    with open(os.path.join("algospace-docker-logs.sh"), "w") as f:
         f.write(template)

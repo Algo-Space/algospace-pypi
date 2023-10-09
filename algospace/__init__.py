@@ -1,6 +1,6 @@
-'''
+"""
 AlgoSpace: A platform for displaying algorithm achievements
-'''
+"""
 
 import pkgutil
 
@@ -20,4 +20,4 @@ def __getattr__(algorithm_name: str):
     return fn(algorithm_name)
 
 
-__version__ = pkgutil.get_data(__name__, 'version.txt').decode('ascii').strip()  # type: ignore
+__version__ = pkgutil.get_data(__name__, "version.txt").decode("ascii").strip()  # type: ignore

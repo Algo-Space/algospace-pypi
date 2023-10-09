@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-'''
+"""
 @Description: 
 @Author: Kermit
 @Date: 2022-11-11 15:27:48
-@LastEditors: Kermit
-@LastEditTime: 2023-02-17 14:32:49
-'''
+"""
 
 
 from typing import Optional
@@ -16,17 +14,25 @@ from .config import call_timeout
 from .fn import AlgoFunction
 
 
-def login(secret: Optional[str] = None, username: Optional[str] = None, password: Optional[str] = None) -> None:
-    ''' 登录 '''
+def login(
+    secret: Optional[str] = None,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+) -> None:
+    """登录"""
     if not ori_login(secret=secret, username=username, password=password):
-        raise LoginError('Login failed. Please check your secret or password.')
+        raise LoginError("Login failed. Please check your secret or password.")
 
 
 _fn_storage = {}
 
 
-def fn(algorithm_name: str, algorithm_version: Optional[str] = None, timeout: int = call_timeout) -> AlgoFunction:
-    ''' 获取算法函数实例 '''
+def fn(
+    algorithm_name: str,
+    algorithm_version: Optional[str] = None,
+    timeout: int = call_timeout,
+) -> AlgoFunction:
+    """获取算法函数实例"""
     global _fn_storage
     fn = _fn_storage.get(algorithm_name, {}).get(algorithm_version)
     if not fn:
@@ -38,8 +44,14 @@ def fn(algorithm_name: str, algorithm_version: Optional[str] = None, timeout: in
     return fn
 
 
-def call(algorithm_name: str, algorithm_version: Optional[str] = None, timeout: int = call_timeout, kwargs: dict = {}, **kwds: dict) -> dict:
-    ''' 直接调用算法函数 '''
+def call(
+    algorithm_name: str,
+    algorithm_version: Optional[str] = None,
+    timeout: int = call_timeout,
+    kwargs: dict = {},
+    **kwds: dict,
+) -> dict:
+    """直接调用算法函数"""
     kwargs.update(kwds)
     return fn(algorithm_name, algorithm_version, timeout)(**kwargs)
 
@@ -49,21 +61,21 @@ def show_example(algorithm_name: str, algorithm_version: Optional[str] = None):
 
 
 def info(algorithm_name: str, algorithm_version: Optional[str] = None) -> dict:
-    ''' 获取算法信息 '''
+    """获取算法信息"""
     info = AlgoFunction(algorithm_name, algorithm_version).get_info()
     return {
-        'name': info['name'],
-        'version': info['version'],
-        'can_call': info['can_call'],
-        'input_param': info['input_param'],
-        'output_param': info['output_param'],
-        'create_date': info['create_date'],
-        'example': info['example'],
-        'output_example': info['output_example'],
+        "name": info["name"],
+        "version": info["version"],
+        "can_call": info["can_call"],
+        "input_param": info["input_param"],
+        "output_param": info["output_param"],
+        "create_date": info["create_date"],
+        "example": info["example"],
+        "output_example": info["output_example"],
     }
 
 
 def clear_storage():
-    ''' 清除算法信息缓存 '''
+    """清除算法信息缓存"""
     global _fn_storage
     _fn_storage = {}
