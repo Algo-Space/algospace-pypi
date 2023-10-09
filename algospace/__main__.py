@@ -18,6 +18,7 @@ class ArgNamespace:
     generate_debian_mirror = "generate_debian_mirror"
     generate_use_buildkit_debian_cache = "generate_use_buildkit_debian_cache"
     generate_use_buildkit_pip_cache = "generate_use_buildkit_pip_cache"
+    generate_compute_platform = "generate_compute_platform"
     cloud_deploy_reset = "cloud_deploy_reset"
 
 
@@ -96,6 +97,14 @@ def run():
         action="store_true",
         help="使用 BuildKit 缓存 pip packages",
     )
+    generate_parser.add_argument(
+        "--compute-platform",
+        dest=ArgNamespace.generate_compute_platform,
+        metavar="<cpu,cuda12.1,cuda11.8,rocm5.6>",
+        choices=["cpu", "cuda12.1", "cuda11.8", "rocm5.6"],
+        default="cpu",
+        help="计算平台",
+    )
     # enroll 命令参数
     enroll_parser.add_argument(
         "-c",
@@ -166,6 +175,7 @@ def run():
             args.generate_debian_mirror,
             args.generate_use_buildkit_debian_cache is True,
             args.generate_use_buildkit_pip_cache is True,
+            args.generate_compute_platform,
         )
 
     elif args.command == "enroll":

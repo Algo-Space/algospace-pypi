@@ -18,12 +18,13 @@ def generate_docker_config(
     generate_debian_mirror: str = "",
     use_buildkit_debian_cache: bool = False,
     use_buildkit_pip_cache: bool = False,
+    compute_platform: str = "cpu",
 ):
     try:
         algorithm_config = ConfigLoader(config_path)
         algorithm_info = Algoinfo(algorithm_config.name, algorithm_config.version)
 
-        gen_requirements_txt(algorithm_config.requirements)
+        gen_requirements_txt(algorithm_config.requirements, compute_platform)
         algospace_logger_notime.info(
             "[Step 1/4] Requirements has been successfully generated!"
         )
@@ -59,22 +60,49 @@ def generate_docker_config(
         exit(-1)
 
 
-def gen_requirements_txt(requirements: list[str]):
+def gen_requirements_txt(requirements: list[str], compute_platform: str):
+    torch_packages = ["torch", "torchaudio", "torchvision"]
+
     with open("algospace-requirements.txt", "w") as f:
         for requirements_item in requirements:
-            if "torch==" in requirements_item.replace(" ", ""):
-                # 如果是Pytorch，要从官网下载可支持版本，否则会出问题，查看 Dockerfile 那里
-                f.write(
-                    "--find-links https://download.pytorch.org/whl/torch_stable.html\n"
+            requirements_item = requirements_item.strip()
+            postfix_item = ""
+
+            # 如果是 torch 系列包，需要根据 compute_platform 添加后缀
+            if (
+                any(
+                    map(
+                        lambda x: (
+                            requirements_item == x
+                            or requirements_item.startswith(x + " ")
+                            or requirements_item.startswith(x + "==")
+                            or requirements_item.startswith(x + ">=")
+                            or requirements_item.startswith(x + "<=")
+                            or requirements_item.startswith(x + ">")
+                            or requirements_item.startswith(x + "<")
+                            or requirements_item.startswith(x + "~")
+                            or requirements_item.startswith(x + "!=")
+                            or requirements_item.startswith(x + "[")
+                        ),
+                        torch_packages,
+                    )
                 )
-                f.write(requirements_item + "\n")
-            elif "torchvision" in requirements_item:
-                f.write(
-                    "--find-links https://download.pytorch.org/whl/torch_stable.html\n"
-                )
-                f.write(requirements_item + "\n")
-            else:
-                f.write(requirements_item + "\n")
+                and "--index-url" not in requirements_item
+            ):
+                if compute_platform == "cpu":
+                    postfix_item = " --index-url https://download.pytorch.org/whl/cpu"
+                elif compute_platform == "cuda12.1":
+                    postfix_item = " --index-url https://download.pytorch.org/whl/cu121"
+                elif compute_platform == "cuda11.8":
+                    postfix_item = " --index-url https://download.pytorch.org/whl/cu118"
+                elif compute_platform == "rocm5.6":
+                    postfix_item = (
+                        " --index-url https://download.pytorch.org/whl/rocm5.6"
+                    )
+
+            if postfix_item != "":
+                requirements_item += postfix_item
+            f.write(requirements_item + "\n")
 
 
 def gen_dockerfile(
