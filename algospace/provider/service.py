@@ -1117,7 +1117,9 @@ def run_service(config_path: str, fetch_mode: str = "listen") -> None:
             algospace_logger.error(
                 "If the error traceback is not displayed, it could be due to the subprocess having exited with an 'Illegal instruction (core dumped)' error."
             )
-            algospace_logger.error("Please restrict the version of `import` packages.")
+            algospace_logger.error(
+                "Please check the version of packages and match the architecture of the CPU and the GPU."
+            )
     except:
         traceback.print_exc()
         exit_code = -1
