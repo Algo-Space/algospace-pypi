@@ -1110,7 +1110,7 @@ def run_service(config_path: str, fetch_mode: str = "listen") -> None:
         service_result = loop.run_until_complete(service_coroutine)
         if service_result is not None:
             exit_code, exit_name = service_result
-        if exit_code is not None and exit_code not in (0, -1) and exit_name is not None:
+        if exit_code is not None and exit_code not in (0, -1, 255) and exit_name is not None:
             algospace_logger.error(
                 f"Exit with code {exit_code} from {exit_name} subprocess."
             )
