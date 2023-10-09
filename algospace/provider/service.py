@@ -1115,7 +1115,7 @@ def run_service(config_path: str, fetch_mode: str = "listen") -> None:
                 f"Exit with code {exit_code} from {exit_name} subprocess."
             )
             algospace_logger.error(
-                "If error traceback is not shown, it may be caused by the subprocess has been exited by `import` some third package."
+                "If the error traceback is not displayed, it could be due to the subprocess having exited with an 'Illegal instruction (core dumped)' error."
             )
             algospace_logger.error("Please restrict the version of `import` packages.")
     except:
