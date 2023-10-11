@@ -6,24 +6,34 @@
 @Date: 2022-11-05 16:46:46
 """
 
-from typing import Any, Callable, Optional, List, Tuple, Union
-from algospace.logger import Logger, algospace_logger
-from algospace.util import create_timestamp_filename
-from . import config
-from .config import Algoinfo
-import urllib.request
-import gradio as gr
 import asyncio
-import multiprocessing
-from multiprocessing.synchronize import Lock
-from multiprocessing.connection import Connection
-import threading
+import base64
 import concurrent.futures
+import datetime
+import json
+import multiprocessing
+import os
+import re
 import socket
+import threading
+import time
 import traceback
+import urllib.request
+from multiprocessing.connection import Connection
+from multiprocessing.synchronize import Lock
+from typing import Any, Callable, List, Optional, Tuple, Union
+
+import gradio as gr
 import requests
 import websocket
+
+from algospace.exceptions import InvalidCallParamException
+from algospace.logger import Logger, algospace_logger
 from algospace.login import login, login_instance
+from algospace.util import create_timestamp_filename
+
+from . import config
+from .config import Algoinfo
 from .config_loader import (
     ConfigLoader,
     InputType,
@@ -31,16 +41,9 @@ from .config_loader import (
     valid_input_type,
     valid_output_type,
 )
+from .enroll import enroll, is_component_normal, verify_config
 from .param_validator import ParamValidator
-from .enroll import enroll, verify_config, is_component_normal
 from .stdio import GradioPrint, QueueStdIO, QueueStdIOExec
-from algospace.exceptions import InvalidCallParamException
-import json
-import time
-import datetime
-import os
-import re
-import base64
 
 
 class FnService:
@@ -943,9 +946,15 @@ class Service:
             "algorithm_name": self.algorithm_info.name,
             "algorithm_version": self.algorithm_info.version,
         }
-        requests.post(
-            config.heartbeat_url, data=body, headers=login_instance.get_header()
-        )
+        response: Optional[requests.Response] = None
+        try:
+            response = requests.post(
+                config.heartbeat_url, data=body, headers=login_instance.get_header()
+            )
+        except:
+            if response is not None:
+                response.close()
+            raise
 
     async def start(self):
         # 初始化状态
@@ -1110,7 +1119,11 @@ def run_service(config_path: str, fetch_mode: str = "listen") -> None:
         service_result = loop.run_until_complete(service_coroutine)
         if service_result is not None:
             exit_code, exit_name = service_result
-        if exit_code is not None and exit_code not in (0, -1, 255) and exit_name is not None:
+        if (
+            exit_code is not None
+            and exit_code not in (0, -1, 255)
+            and exit_name is not None
+        ):
             algospace_logger.error(
                 f"Exit with code {exit_code} from {exit_name} subprocess."
             )
